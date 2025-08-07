@@ -1,0 +1,793 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Home, BarChart3, Settings, Save, RefreshCcw, X, Thermometer, Ruler, Droplets, Award, TrendingUp, Calendar, Target, Zap } from 'lucide-react';
+import Chart from 'chart.js/auto';
+
+// Hook customizado para persistir o estado no localStorage
+const useLocalStorage = (key, initialValue) => {
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(error);
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(storedValue));
+    } catch (error) {
+      console.error(error);
+    }
+  }, [key, storedValue]);
+
+  return [storedValue, setStoredValue];
+};
+
+// Componente principal da aplicação
+const App = () => {
+  // Estado para os dados da aplicação
+  const [currentWater, setCurrentWater] = useLocalStorage('currentWater', 0);
+  const [goalWater, setGoalWater] = useLocalStorage('goalWater', 2500);
+  const [waterHistory, setWaterHistory] = useLocalStorage('waterHistory', [0, 0, 0, 0, 0, 0, 0]);
+  const [lastUpdateDate, setLastUpdateDate] = useLocalStorage('lastUpdateDate', new Date().toDateString());
+  const [userWeight, setUserWeight] = useLocalStorage('userWeight', 70);
+  const [streak, setStreak] = useLocalStorage('streak', 0);
+
+  // Estados para controlar a navegação e modais
+  const [currentPage, setCurrentPage] = useState('home');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, message: '', isError: false });
+
+  // Referência para rastrear os marcos motivacionais já exibidos
+  const motivationalMilestoneRef = useRef(0);
+
+  // Estados para temperatura e meta recomendada
+  const [currentTemperature, setCurrentTemperature] = useState(null);
+  const [recommendedGoalByTemperature, setRecommendedGoalByTemperature] = useState(null);
+  const [isLoadingTemperature, setIsLoadingTemperature] = useState(false);
+
+  // Estados para peso e meta recomendada por peso
+  const [recommendedGoalByWeight, setRecommendedGoalByWeight] = useState(null);
+
+  // Novos estados para animações
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [waterDrops, setWaterDrops] = useState([]);
+
+  // Efeito para rolar o histórico diariamente
+  useEffect(() => {
+    const today = new Date().toDateString();
+    if (today !== lastUpdateDate) {
+      setWaterHistory(prevHistory => [...prevHistory.slice(1), 0]);
+      setCurrentWater(0);
+      setLastUpdateDate(today);
+      showFeedbackModal('✨ Um novo dia começou! Seu contador foi zerado.', false);
+      motivationalMilestoneRef.current = 0;
+    }
+  }, [lastUpdateDate, setLastUpdateDate, setWaterHistory, setCurrentWater]);
+
+  // Efeito para exibir mensagens motivacionais
+  useEffect(() => {
+    const percentage = (currentWater / goalWater) * 100;
+    const currentMilestone = motivationalMilestoneRef.current;
+
+    if (percentage >= 100 && currentMilestone < 100) {
+      showFeedbackModal("🏆 Meta atingida! Parabéns pela disciplina!");
+      setStreak(prev => prev + 1);
+      motivationalMilestoneRef.current = 100;
+    } else if (percentage >= 75 && currentMilestone < 75) {
+      showFeedbackModal("🚀 Você está quase lá, continue!");
+      motivationalMilestoneRef.current = 75;
+    } else if (percentage >= 50 && currentMilestone < 50) {
+      showFeedbackModal("💧 Você está na metade! Continue assim!");
+      motivationalMilestoneRef.current = 50;
+    } else if (percentage > 0 && currentMilestone === 0) {
+      showFeedbackModal("☀️ Ótimo começo de dia!");
+      motivationalMilestoneRef.current = 1;
+    }
+  }, [currentWater, goalWater, setStreak]);
+
+  // Função para buscar temperatura
+  const fetchTemperatureAndRecommendGoal = async () => {
+    setIsLoadingTemperature(true);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const simulatedTemp = 20 + Math.floor(Math.random() * 15);
+    setCurrentTemperature(simulatedTemp);
+
+    let newRecommendedGoal = goalWater;
+    if (simulatedTemp >= 30) {
+      newRecommendedGoal = Math.floor(goalWater * 1.3);
+    } else if (simulatedTemp >= 25) {
+      newRecommendedGoal = Math.floor(goalWater * 1.1);
+    } else {
+      newRecommendedGoal = goalWater;
+    }
+    setRecommendedGoalByTemperature(newRecommendedGoal);
+    setIsLoadingTemperature(false);
+  };
+  
+  useEffect(() => {
+    if(currentPage === 'settings') {
+      fetchTemperatureAndRecommendGoal();
+    }
+  }, [currentPage]);
+
+  // Efeito para calcular meta por peso
+  useEffect(() => {
+    if (userWeight > 0) {
+      setRecommendedGoalByWeight(Math.floor(userWeight * 35));
+    } else {
+      setRecommendedGoalByWeight(null);
+    }
+  }, [userWeight]);
+
+  // Função para criar efeito de gotas
+  const createWaterDrops = () => {
+    const drops = Array.from({ length: 5 }, (_, i) => ({
+      id: Date.now() + i,
+      x: Math.random() * 100,
+      delay: Math.random() * 0.5
+    }));
+    setWaterDrops(drops);
+    setTimeout(() => setWaterDrops([]), 2000);
+  };
+
+  // Funções de manipulação de estado
+  const handleAddWater = (amount) => {
+    if (isNaN(amount) || amount <= 0) return;
+    
+    setIsAnimating(true);
+    createWaterDrops();
+    
+    const newCurrentWater = currentWater + amount;
+    const newWaterHistory = [...waterHistory];
+    newWaterHistory[newWaterHistory.length - 1] += amount;
+
+    setTimeout(() => {
+      setCurrentWater(newCurrentWater);
+      setWaterHistory(newWaterHistory);
+      setIsAnimating(false);
+    }, 300);
+    
+    setIsAddModalOpen(false);
+  };
+
+  const handleApplyRecommendedGoal = (goal) => {
+    if (goal) {
+      setGoalWater(goal);
+      showFeedbackModal(`🎯 Meta atualizada para ${goal} ml!`);
+    }
+  };
+
+  const showFeedbackModal = (message, isError = false) => {
+    setFeedbackModal({ isOpen: true, message, isError });
+    setTimeout(() => {
+      setFeedbackModal({ isOpen: false, message: '', isError: false });
+    }, 3000);
+  };
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'stats':
+        return (
+          <StatsPage
+            waterHistory={waterHistory}
+            goalWater={goalWater}
+            streak={streak}
+            onClose={() => setCurrentPage('home')}
+          />
+        );
+      case 'settings':
+        return (
+          <SettingsPage
+            goalWater={goalWater}
+            setGoalWater={setGoalWater}
+            onResetWater={() => {
+                setCurrentWater(0);
+                setStreak(0);
+                showFeedbackModal('💧 Contador de água zerado!');
+            }}
+            showFeedbackModal={showFeedbackModal}
+            onClose={() => setCurrentPage('home')}
+            currentTemperature={currentTemperature}
+            recommendedGoalByTemperature={recommendedGoalByTemperature}
+            isLoadingTemperature={isLoadingTemperature}
+            onFetchTemperature={fetchTemperatureAndRecommendGoal}
+            onApplyRecommendedGoal={handleApplyRecommendedGoal}
+            userWeight={userWeight}
+            setUserWeight={setUserWeight}
+            recommendedGoalByWeight={recommendedGoalByWeight}
+          />
+        );
+      case 'home':
+      default:
+        return (
+          <HomePage
+            currentWater={currentWater}
+            goalWater={goalWater}
+            streak={streak}
+            isAnimating={isAnimating}
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="font-sans bg-gradient-to-br from-blue-400 via-cyan-400 to-indigo-600 min-h-screen flex items-center justify-center p-4 text-white relative overflow-hidden">
+      {/* Elementos de fundo animados */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-white/5 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-48 h-48 bg-white/3 rounded-full blur-2xl animate-bounce" style={{ animationDuration: '3s' }}></div>
+        <div className="absolute top-1/3 right-1/4 w-20 h-20 bg-white/4 rounded-full blur-lg animate-float"></div>
+      </div>
+
+      {/* Container principal com glassmorphism aprimorado */}
+      <div className="w-full max-w-sm h-[90vh] max-h-[800px] bg-white/10 backdrop-blur-2xl rounded-[32px] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] overflow-hidden relative flex flex-col border border-white/20 p-6 before:absolute before:inset-0 before:rounded-[32px] before:p-[1px] before:bg-gradient-to-br before:from-white/30 before:via-white/10 before:to-transparent before:content-[''] before:-z-10">
+        
+        {/* Gotas animadas */}
+        {waterDrops.map(drop => (
+          <div
+            key={drop.id}
+            className="absolute w-3 h-3 bg-white/60 rounded-full animate-bounce pointer-events-none z-10"
+            style={{
+              left: `${drop.x}%`,
+              top: '20%',
+              animationDelay: `${drop.delay}s`,
+              animationDuration: '1s'
+            }}
+          />
+        ))}
+        
+        {renderPage()}
+        
+        <BottomNav
+          currentPage={currentPage}
+          onNavigate={setCurrentPage}
+          onOpenAddWater={() => setIsAddModalOpen(true)}
+        />
+      </div>
+
+      <AddWaterModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddWater={handleAddWater}
+      />
+
+      <FeedbackModal
+        isOpen={feedbackModal.isOpen}
+        message={feedbackModal.message}
+        isError={feedbackModal.isError}
+      />
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// Componente de cabeçalho aprimorado
+const Header = ({ pageTitle, streak }) => {
+  const titles = {
+    home: 'AquaFlow',
+    stats: 'Estatísticas',
+    settings: 'Configurações'
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bom dia!';
+    if (hour < 18) return 'Boa tarde!';
+    return 'Boa noite!';
+  };
+
+  return (
+    <header className="flex justify-between items-center text-white z-10 mb-6">
+      <div>
+        <h1 className="font-bold text-3xl capitalize bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+          {titles[pageTitle] || 'AquaFlow'}
+        </h1>
+        <p className="text-sm opacity-80">{getGreeting()} Mantenha-se hidratado.</p>
+      </div>
+      {pageTitle === 'home' && streak > 0 && (
+        <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full px-3 py-1 border border-white/20">
+          <Award size={16} className="text-yellow-300" />
+          <span className="text-sm font-bold">{streak}</span>
+        </div>
+      )}
+    </header>
+  );
+};
+
+// Página inicial aprimorada
+const HomePage = ({ currentWater, goalWater, streak, isAnimating }) => {
+  const percentage = Math.min((currentWater / goalWater) * 100, 100);
+  
+  return (
+    <>
+      <Header pageTitle="home" streak={streak} />
+      <main className="flex-1 flex flex-col items-center justify-center text-center -mt-8">
+        <div className={`transition-all duration-500 ${isAnimating ? 'scale-105' : 'scale-100'}`}>
+          <ProgressChart currentWater={currentWater} goalWater={goalWater} />
+        </div>
+        
+        {/* Cards de informações */}
+        <div className="grid grid-cols-2 gap-3 w-full mt-8">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+            <div className="flex items-center justify-between mb-1">
+              <Target size={16} className="text-cyan-300" />
+              <span className="text-xs opacity-70">Meta</span>
+            </div>
+            <p className="text-lg font-bold">{goalWater} ml</p>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+            <div className="flex items-center justify-between mb-1">
+              <TrendingUp size={16} className="text-green-300" />
+              <span className="text-xs opacity-70">Progresso</span>
+            </div>
+            <p className="text-lg font-bold">{percentage.toFixed(0)}%</p>
+          </div>
+        </div>
+
+        <div className="mt-6 bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+          <p className="text-lg font-bold mb-1">Continue assim! 💪</p>
+          <p className="text-sm opacity-80 max-w-xs">A hidratação adequada melhora sua energia, concentração e bem-estar geral.</p>
+        </div>
+      </main>
+    </>
+  );
+};
+
+// Página de Estatísticas aprimorada
+const StatsPage = ({ waterHistory, goalWater, streak, onClose }) => {
+  const chartRef = useRef(null);
+  const chartInstanceRef = useRef(null);
+  const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Hoje'];
+  const closeButtonRef = useRef(null);
+
+  const totalWeekConsumption = waterHistory.reduce((sum, day) => sum + day, 0);
+  const avgDaily = Math.round(totalWeekConsumption / 7);
+  const daysCompleted = waterHistory.filter(day => day >= goalWater).length;
+
+  useEffect(() => {
+    if (closeButtonRef.current) {
+        closeButtonRef.current.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (chartRef.current) {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+      }
+      const ctx = chartRef.current.getContext('2d');
+      chartInstanceRef.current = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: daysOfWeek,
+          datasets: [{
+            label: 'Consumo (ml)',
+            data: waterHistory,
+            backgroundColor: waterHistory.map(value =>
+              value >= goalWater ? 'rgba(34, 197, 94, 0.8)' : 'rgba(255, 255, 255, 0.6)'
+            ),
+            borderColor: waterHistory.map(value =>
+              value >= goalWater ? 'rgba(34, 197, 94, 1)' : 'rgba(255, 255, 255, 0.8)'
+            ),
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false,
+          }, {
+            label: 'Meta',
+            data: Array(7).fill(goalWater),
+            type: 'line',
+            borderColor: '#fbbf24',
+            borderWidth: 3,
+            pointRadius: 4,
+            pointBackgroundColor: '#fbbf24',
+            fill: false,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: 'white', font: { weight: 'bold' } }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255, 255, 255, 0.1)' },
+              ticks: { color: 'white' }
+            }
+          }
+        }
+      });
+    }
+    return () => {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+      }
+    };
+  }, [waterHistory, goalWater]);
+
+  return (
+    <div className="absolute inset-0 w-full h-full flex flex-col">
+      <div className="flex justify-between items-center w-full mb-6">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">Estatísticas</h2>
+        <button
+          onClick={onClose}
+          ref={closeButtonRef}
+          className="p-3 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 border border-white/20"
+          aria-label="Fechar Estatísticas"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      {/* Cards de estatísticas */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 text-center">
+          <Calendar size={16} className="mx-auto mb-1 text-cyan-300" />
+          <p className="text-xs opacity-70">Sequência</p>
+          <p className="text-lg font-bold">{streak}</p>
+        </div>
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 text-center">
+          <BarChart3 size={16} className="mx-auto mb-1 text-green-300" />
+          <p className="text-xs opacity-70">Média</p>
+          <p className="text-lg font-bold">{avgDaily} ml</p>
+        </div>
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 text-center">
+          <Award size={16} className="mx-auto mb-1 text-yellow-300" />
+          <p className="text-xs opacity-70">Sucessos</p>
+          <p className="text-lg font-bold">{daysCompleted}/7</p>
+        </div>
+      </div>
+
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 h-64 border border-white/10">
+        <canvas ref={chartRef}></canvas>
+      </div>
+      
+      <p className="opacity-80 mt-4 text-sm text-center">
+        📊 Histórico de consumo dos últimos 7 dias
+      </p>
+    </div>
+  );
+};
+
+// Página de Configurações aprimorada
+const SettingsPage = ({ goalWater, setGoalWater, onResetWater, showFeedbackModal, onClose, currentTemperature, recommendedGoalByTemperature, isLoadingTemperature, onFetchTemperature, onApplyRecommendedGoal, userWeight, setUserWeight, recommendedGoalByWeight }) => {
+  const [newGoal, setNewGoal] = useState(goalWater);
+  const closeButtonRef = useRef(null);
+
+  useEffect(() => {
+    if (closeButtonRef.current) {
+      closeButtonRef.current.focus();
+    }
+  }, []);
+
+  const handleSaveGoal = () => {
+    const parsedGoal = parseInt(newGoal, 10);
+    if (!isNaN(parsedGoal) && parsedGoal > 0) {
+      setGoalWater(parsedGoal);
+      showFeedbackModal('✅ Meta salva com sucesso!');
+    } else {
+      showFeedbackModal('❌ Por favor, insira um valor válido para a meta.', true);
+    }
+  };
+
+  return (
+    <div className="absolute inset-0 w-full h-full flex flex-col">
+      <div className="flex justify-between items-center w-full mb-6">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">Configurações</h2>
+        <button
+          onClick={onClose}
+          ref={closeButtonRef}
+          className="p-3 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-300 border border-white/20"
+          aria-label="Fechar Configurações"
+        >
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-6 w-full overflow-y-auto">
+        {/* Ajuste Manual da Meta */}
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Target size={20} className="text-cyan-300" />
+            Ajuste da Meta Diária
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="goal" className="text-sm opacity-80 mb-2 block">Meta diária (ml)</label>
+              <input
+                id="goal"
+                type="number"
+                value={newGoal}
+                onChange={(e) => setNewGoal(e.target.value)}
+                className="w-full bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 border border-white/20 transition-all duration-300"
+              />
+            </div>
+            <button
+              onClick={handleSaveGoal}
+              className="flex items-center justify-center gap-2 p-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 w-full shadow-lg"
+              aria-label="Salvar meta"
+            >
+              <Save size={20} />
+              <span>Salvar Meta</span>
+            </button>
+          </div>
+        </div>
+        
+        {/* Meta por Peso */}
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Ruler size={20} className="text-green-300" />
+            Meta por Peso
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label htmlFor="weight" className="text-sm opacity-80">Peso (kg)</label>
+              <input
+                id="weight"
+                type="number"
+                value={userWeight}
+                onChange={(e) => setUserWeight(parseInt(e.target.value) || 0)}
+                className="w-20 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2 text-white text-center focus:outline-none focus:ring-2 focus:ring-green-400/50 border border-white/20"
+              />
+            </div>
+            {recommendedGoalByWeight && (
+              <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                <span className="text-sm">Meta Recomendada: <span className="font-bold text-green-300">{recommendedGoalByWeight} ml</span></span>
+                <button
+                  onClick={() => onApplyRecommendedGoal(recommendedGoalByWeight)}
+                  className="p-2 rounded-full bg-green-500 hover:bg-green-600 transition-colors"
+                  aria-label="Aplicar meta recomendada"
+                >
+                  <Save size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Meta por Temperatura */}
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Thermometer size={20} className="text-orange-300" />
+            Meta por Temperatura
+          </h3>
+          <div className="space-y-4">
+            <p className="flex items-center gap-2 text-sm opacity-80">
+              {currentTemperature ? `🌡️ Temperatura atual: ${currentTemperature}°C` : '🔍 Buscando temperatura...'}
+            </p>
+            {recommendedGoalByTemperature && (
+              <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                <span className="text-sm">Meta Recomendada: <span className="font-bold text-orange-300">{recommendedGoalByTemperature} ml</span></span>
+                <button
+                  onClick={() => onApplyRecommendedGoal(recommendedGoalByTemperature)}
+                  className="p-2 rounded-full bg-orange-500 hover:bg-orange-600 transition-colors"
+                  aria-label="Aplicar meta recomendada"
+                >
+                  <Save size={16} />
+                </button>
+              </div>
+            )}
+            <button
+              onClick={onFetchTemperature}
+              disabled={isLoadingTemperature}
+              className="flex items-center justify-center gap-2 p-3 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 w-full border border-white/20 disabled:opacity-50"
+              aria-label="Buscar temperatura e meta"
+            >
+              <RefreshCcw size={20} className={isLoadingTemperature ? "animate-spin" : ""}/>
+              <span>{isLoadingTemperature ? 'Buscando...' : 'Atualizar Meta'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Ações Adicionais */}
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Zap size={20} className="text-yellow-300" />
+            Ações Adicionais
+          </h3>
+          <button
+            onClick={onResetWater}
+            className="flex items-center justify-center gap-2 p-3 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 w-full border border-white/20"
+            aria-label="Zerar Contador de Água"
+          >
+            <RefreshCcw size={20} />
+            <span>Zerar Contador de Água</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Gráfico de progresso aprimorado
+const ProgressChart = ({ currentWater, goalWater }) => {
+  const chartRef = useRef(null);
+  const chartInstanceRef = useRef(null);
+  const percentage = Math.min((currentWater / goalWater) * 100, 100);
+
+  useEffect(() => {
+    if (chartRef.current) {
+      const ctx = chartRef.current.getContext('2d');
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+      }
+      
+      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+      gradient.addColorStop(0, 'rgba(34, 197, 94, 1)'); // verde
+      gradient.addColorStop(0.5, 'rgba(59, 130, 246, 1)'); // azul
+      gradient.addColorStop(1, 'rgba(147, 51, 234, 1)'); // roxo
+      
+      chartInstanceRef.current = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Consumido', 'Restante'],
+          datasets: [{
+            data: [currentWater, Math.max(0, goalWater - currentWater)],
+            backgroundColor: [gradient, 'rgba(255, 255, 255, 0.1)'],
+            borderWidth: 0,
+            borderRadius: 20,
+          }]
+        },
+        options: {
+          responsive: true,
+          cutout: '75%',
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          animation: {
+            animateRotate: true,
+            duration: 1000
+          }
+        }
+      });
+    }
+    return () => {
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+      }
+    };
+  }, [currentWater, goalWater]);
+
+  return (
+    <div className="relative w-64 h-64">
+      <canvas ref={chartRef}></canvas>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white">
+        <span className="text-5xl font-bold">{currentWater}</span>
+        <span className="text-lg opacity-80">/ {goalWater} ml</span>
+      </div>
+    </div>
+  );
+};
+
+// Botão de ação flutuante
+const ActionButton = ({ onOpen }) => (
+  <button onClick={onOpen} className="w-16 h-16 rounded-full bg-white text-blue-500 text-3xl font-light flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300" aria-label="Adicionar água">+</button>
+);
+
+// Navegação inferior
+const BottomNav = ({ currentPage, onNavigate, onOpenAddWater }) => {
+  const commonButtonClasses = "p-3 rounded-full transition-colors";
+  const getButtonClasses = (page) =>
+    currentPage === page
+      ? `${commonButtonClasses} bg-white/20 cursor-default`
+      : `${commonButtonClasses} hover:bg-white/20`;
+
+  return (
+    <nav className="h-24 rounded-t-[30px] w-full mt-auto flex items-center justify-around text-white z-10">
+      <button
+        onClick={() => onNavigate('home')}
+        className={getButtonClasses('home')}
+        disabled={currentPage === 'home'}
+        aria-label="Ir para a página inicial"
+      >
+        <Home size={28} />
+      </button>
+      <button
+        onClick={() => onNavigate('stats')}
+        className={getButtonClasses('stats')}
+        aria-label="Ver estatísticas"
+      >
+        <BarChart3 size={28} />
+      </button>
+      <ActionButton onOpen={onOpenAddWater} />
+      <button
+        onClick={() => onNavigate('settings')}
+        className={getButtonClasses('settings')}
+        aria-label="Abrir configurações"
+      >
+        <Settings size={28} />
+      </button>
+    </nav>
+  );
+};
+
+// Modal para adicionar água
+const AddWaterModal = ({ isOpen, onClose, onAddWater }) => {
+  const [customAmount, setCustomAmount] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    const amount = parseInt(customAmount);
+    if (amount > 0) {
+      onAddWater(amount);
+      setCustomAmount('');
+    }
+  };
+
+  const handleShortcut = (amount) => {
+    onAddWater(amount);
+    setCustomAmount('');
+  };
+
+  return (
+    <div className="fixed inset-0 w-full h-full bg-black/30 backdrop-blur-sm flex items-center justify-center z-20" onClick={onClose}>
+      <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg w-full max-w-xs rounded-3xl p-6 text-white flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold mb-6">Adicionar Água</h2>
+
+        <div className="grid grid-cols-3 gap-4 w-full mb-6">
+          <button onClick={() => handleShortcut(150)} className="bg-white/10 border border-white/20 rounded-xl p-4 text-center hover:bg-white/30 transition-colors">150ml</button>
+          <button onClick={() => handleShortcut(250)} className="bg-white/10 border border-white/20 rounded-xl p-4 text-center hover:bg-white/30 transition-colors">250ml</button>
+          <button onClick={() => handleShortcut(500)} className="bg-white/10 border border-white/20 rounded-xl p-4 text-center hover:bg-white/30 transition-colors">500ml</button>
+        </div>
+
+        <div className="w-full mb-6">
+          <input
+            ref={inputRef}
+            type="number"
+            value={customAmount}
+            onChange={(e) => setCustomAmount(e.target.value)}
+            placeholder="Ou digite um valor (ml)"
+            className="bg-white/10 border border-white/20 w-full rounded-xl px-4 py-3 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
+          />
+        </div>
+
+        <div className="flex w-full gap-4">
+          <button onClick={onClose} className="flex-1 bg-white/10 rounded-xl py-3 hover:bg-white/20 transition-colors">Cancelar</button>
+          <button onClick={handleConfirm} className="flex-1 bg-white text-blue-500 rounded-xl py-3 font-bold hover:bg-gray-200 transition-colors">Adicionar</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modal de Feedback
+const FeedbackModal = ({ isOpen, message, isError }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-30 p-4 rounded-xl shadow-lg transition-all duration-300 transform ${isError ? 'bg-red-500' : 'bg-green-500'} text-white`}>
+      <p>{message}</p>
+    </div>
+  );
+};
+
+export default App;
