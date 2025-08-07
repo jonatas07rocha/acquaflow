@@ -7,81 +7,220 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/tone@14.9.1/build/Tone.js"></script>
     <style>
+        @keyframes animate-background {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes liquid-pulse {
+            0% { box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
+            50% { box-shadow: 0 10px 40px 0 rgba(31, 38, 135, 0.5); }
+            100% { box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Estilo da barra de rolagem */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .app-container-inner {
+            overflow-y: auto;
+        }
+
         .glass-effect {
             background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            animation: liquid-pulse 5s infinite ease-in-out;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .glass-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 40px 0 rgba(31, 38, 135, 0.5);
         }
         .modal-overlay {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .modal-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.3s, opacity 0.3s linear;
+        }
+        .modal-container.is-visible {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-container.is-visible .modal-content {
+            transform: scale(1);
+        }
+        .input-glass {
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease-in-out;
         }
-        .animate-spin {
-            animation: spin 1s linear infinite;
+        .input-glass:focus {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
         }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.2s ease-in-out, transform 0.2s ease-in-out;
         }
-        .page-transition {
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        #add-water-nav-btn:hover {
+            animation: none;
+            transform: scale(1.2);
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
         }
     </style>
 </head>
-<body class="font-sans bg-gradient-to-br from-cyan-400 to-blue-600 h-screen overflow-hidden flex items-center justify-center p-4 text-white">
+<body class="font-sans bg-gradient-to-br from-sky-500 to-indigo-600 h-screen overflow-hidden flex items-center justify-center p-4 text-white" style="background-size: 200% 200%; animation: animate-background 15s infinite ease-in-out;">
 
-    <div id="app-container" class="w-full max-w-sm h-[90vh] max-h-[800px] glass-effect rounded-[40px] shadow-2xl overflow-hidden relative flex flex-col p-6">
+    <div class="w-full h-full flex flex-col items-center justify-between md:w-full md:max-w-sm md:h-[90vh] md:max-h-[800px] md:glass-effect md:rounded-[40px] md:shadow-2xl md:overflow-hidden md:relative md:p-6 md:sm:p-8">
 
-        <header id="header" class="flex justify-between items-center text-white z-10 mb-8">
-            <div>
-                <h1 id="page-title" class="font-bold text-2xl capitalize">AquaFlow</h1>
-                <p class="text-sm opacity-80">Olá! Mantenha-se hidratado.</p>
-            </div>
+        <header id="header" class="flex flex-col text-white z-10 animate-fade-in w-full md:w-auto md:mb-8">
+            <h1 id="page-title" class="font-bold text-3xl capitalize">AquaFlow</h1>
+            <p class="text-sm opacity-80 mt-1">Olá! Mantenha-se hidratado.</p>
         </header>
 
-        <div id="pages-container" class="flex-1 overflow-y-auto relative">
-            
-            <div id="home-page" class="absolute inset-0 flex flex-col items-center justify-center text-center page-transition">
-                <div class="relative w-64 h-64">
-                    <canvas id="progress-chart"></canvas>
-                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white">
-                        <span id="current-water-display" class="text-5xl font-bold">0</span>
-                        <span id="goal-water-display" class="text-lg opacity-80">/ 2500 ml</span>
-                    </div>
+        <div id="dashboard-container" class="flex-1 flex flex-col items-center justify-center text-center animate-fade-in">
+            <div class="relative w-64 h-64 mb-10">
+                <canvas id="progress-chart"></canvas>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white">
+                    <span id="current-water-display" class="text-6xl font-bold">0</span>
+                    <span id="goal-water-display" class="text-lg opacity-80 block mt-1">/ 2500 ml</span>
                 </div>
-                <p class="mt-8 text-lg font-bold">Mantenha o foco na sua meta!</p>
-                <p class="text-sm opacity-80 max-w-xs mt-2">A hidratação é essencial para o seu bem-estar e energia.</p>
             </div>
-
-            <div id="stats-page" class="absolute inset-0 flex flex-col items-center opacity-0 -translate-x-full page-transition hidden">
+            <h2 class="text-xl font-bold">Mantenha o foco na sua meta!</h2>
+            <p class="text-sm opacity-70 max-w-xs mt-2">A hidratação é essencial para o seu bem-estar e energia.</p>
+        </div>
+        
+        <div id="add-water-modal" class="modal-container modal-overlay">
+            <div class="w-full max-w-xs glass-effect rounded-3xl p-6 text-white flex flex-col items-center relative modal-content">
                 <div class="flex justify-between items-center w-full mb-6">
-                    <h2 class="text-2xl font-bold">Estatísticas</h2>
-                    <button id="close-stats-btn" class="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Fechar Estatísticas">
+                    <h2 class="text-xl font-bold">Adicionar Água</h2>
+                    <button id="close-add-modal-btn" class="p-2 rounded-full btn-glass hover:bg-white/20 transition-colors" aria-label="Fechar Adicionar Água">
                         <i data-lucide="x" class="w-6 h-6"></i>
                     </button>
                 </div>
-                <div class="w-full h-64 p-4 rounded-2xl">
-                    <canvas id="stats-chart"></canvas>
+                <div class="grid grid-cols-3 gap-4 w-full mb-6">
+                    <button class="btn-glass rounded-xl p-4 text-center text-lg hover:bg-white/20 transition-colors add-shortcut-btn" data-amount="150">150ml</button>
+                    <button class="btn-glass rounded-xl p-4 text-center text-lg hover:bg-white/20 transition-colors add-shortcut-btn" data-amount="250">250ml</button>
+                    <button class="btn-glass rounded-xl p-4 text-center text-lg hover:bg-white/20 transition-colors add-shortcut-btn" data-amount="500">500ml</button>
                 </div>
-                <p class="opacity-80 mt-4 text-sm">Histórico de consumo dos últimos 7 dias.</p>
+                <div class="w-full mb-6">
+                    <input id="custom-amount-input" type="number" placeholder="Ou digite um valor (ml)" class="input-glass w-full rounded-xl px-4 py-3 text-white placeholder-white/70 focus:outline-none bg-transparent" />
+                </div>
+                <div class="flex w-full">
+                    <button id="confirm-add-btn" class="flex-1 bg-white text-blue-500 rounded-xl py-3 font-bold hover:bg-gray-200 transition-colors">Adicionar</button>
+                </div>
             </div>
+        </div>
 
-            <div id="settings-page" class="absolute inset-0 flex flex-col opacity-0 -translate-x-full page-transition hidden">
+        <div id="stats-modal" class="modal-container modal-overlay">
+            <div class="w-full max-w-sm h-[80%] max-h-[600px] glass-effect rounded-3xl p-6 text-white flex flex-col relative modal-content overflow-y-auto app-container-inner">
+                <div class="flex justify-between items-center w-full mb-6">
+                    <h2 class="text-2xl font-bold">Dashboard</h2>
+                    <button id="close-stats-modal-btn" class="p-2 rounded-full btn-glass hover:bg-white/20 transition-colors" aria-label="Fechar Estatísticas">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <div class="flex flex-col gap-6 w-full">
+                    <div class="glass-card">
+                        <h3 class="text-lg font-bold mb-3">Consumo diário (ml)</h3>
+                        <div class="w-full h-40">
+                            <canvas id="stats-chart"></canvas>
+                        </div>
+                        <p class="opacity-70 mt-4 text-sm text-center">Histórico dos últimos 7 dias.</p>
+                    </div>
+
+                    <div class="glass-card">
+                        <h3 class="text-lg font-bold mb-3">Adições rápidas</h3>
+                        <div class="w-full h-40">
+                            <canvas id="distribution-chart"></canvas>
+                        </div>
+                        <p class="opacity-70 mt-4 text-sm text-center">Distribuição de água por atalho.</p>
+                    </div>
+
+                    <div class="glass-card">
+                        <h3 class="text-lg font-bold mb-3">Sua performance</h3>
+                        <div class="flex items-center justify-around text-center mt-4">
+                            <div>
+                                <span id="streak-count" class="text-3xl font-bold">0</span>
+                                <p class="text-sm opacity-70">dias em sequência</p>
+                            </div>
+                            <div>
+                                <span id="average-daily" class="text-3xl font-bold">0</span>
+                                <p class="text-sm opacity-70">ml média</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="settings-modal" class="modal-container modal-overlay">
+            <div class="w-full max-w-sm h-[80%] max-h-[600px] glass-effect rounded-3xl p-6 text-white flex flex-col relative modal-content overflow-y-auto app-container-inner">
                 <div class="flex justify-between items-center w-full mb-8">
                     <h2 class="text-2xl font-bold">Configurações</h2>
-                    <button id="close-settings-btn" class="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Fechar Configurações">
+                    <button id="close-settings-modal-btn" class="p-2 rounded-full btn-glass hover:bg-white/20 transition-colors" aria-label="Fechar Configurações">
                         <i data-lucide="x" class="w-6 h-6"></i>
                     </button>
                 </div>
                 <div class="flex flex-col gap-6 w-full">
-                    <div>
+                    <div class="glass-card">
                         <h3 class="text-lg font-bold mb-3">Ajuste da Meta Diária</h3>
                         <div class="flex flex-col items-start w-full">
-                            <label for="manual-goal-input" class="text-sm opacity-80 mb-1">Meta diária (ml)</label>
-                            <input id="manual-goal-input" type="number" class="w-full bg-white/20 rounded-xl px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50" />
+                            <label for="manual-goal-input" class="text-sm opacity-70 mb-1">Meta diária (ml)</label>
+                            <input id="manual-goal-input" type="number" class="w-full input-glass rounded-xl px-4 py-3 text-white placeholder-white/70 focus:outline-none" />
                         </div>
                         <button id="save-manual-goal-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl bg-white text-blue-500 font-bold hover:bg-gray-200 transition-colors mt-4 w-full" aria-label="Salvar meta">
                             <i data-lucide="save" class="w-5 h-5"></i>
@@ -89,17 +228,17 @@
                         </button>
                     </div>
                     
-                    <div>
+                    <div class="glass-card">
                         <h3 class="text-lg font-bold mb-3">Meta por Peso</h3>
                         <div class="flex flex-col gap-2 w-full">
                             <div class="flex items-center justify-between w-full">
-                                <label for="weight-input" class="text-sm opacity-80 mb-1 flex items-center gap-2">
+                                <label for="weight-input" class="text-sm opacity-70 flex items-center gap-2">
                                     <i data-lucide="ruler" class="w-4 h-4"></i>
                                     Peso (kg)
                                 </label>
-                                <input id="weight-input" type="number" class="w-20 bg-white/20 rounded-xl px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 text-right" />
+                                <input id="weight-input" type="number" class="w-24 input-glass rounded-xl px-4 py-2 text-white placeholder-white/70 focus:outline-none text-right" />
                             </div>
-                            <div id="weight-goal-display" class="flex items-center justify-between w-full p-3 rounded-xl glass-effect mt-2">
+                            <div id="weight-goal-display" class="flex items-center justify-between w-full p-3 rounded-xl btn-glass mt-2">
                                 <span class="text-sm">Meta Recomendada: <span id="weight-goal-value" class="font-bold"></span></span>
                                 <button id="apply-weight-goal-btn" class="p-1 rounded-full bg-white text-blue-500 hover:bg-gray-200 transition-colors" aria-label="Aplicar meta por peso">
                                     <i data-lucide="save" class="w-4 h-4"></i>
@@ -108,96 +247,97 @@
                         </div>
                     </div>
 
-                    <div>
+                    <div class="glass-card">
                         <h3 class="text-lg font-bold mb-3">Meta por Temperatura</h3>
                         <div class="flex flex-col gap-2 w-full">
-                            <p id="temperature-display" class="flex items-center gap-2 text-sm opacity-80">
+                            <p id="temperature-display" class="flex items-center gap-2 text-sm opacity-70">
                                 <i data-lucide="thermometer" class="w-4 h-4"></i>
-                                Buscando temperatura...
+                                Para calcular a meta por temperatura, clique em 'Atualizar Meta'.
                             </p>
-                            <div id="temperature-goal-display" class="flex items-center justify-between w-full p-3 rounded-xl glass-effect mt-2">
+                            <div id="temperature-goal-display" class="flex items-center justify-between w-full p-3 rounded-xl btn-glass mt-2 hidden">
                                 <span class="text-sm">Meta Recomendada: <span id="temperature-goal-value" class="font-bold"></span></span>
                                 <button id="apply-temp-goal-btn" class="p-1 rounded-full bg-white text-blue-500 hover:bg-gray-200 transition-colors" aria-label="Aplicar meta por temperatura">
                                     <i data-lucide="save" class="w-4 h-4"></i>
                                 </button>
                             </div>
-                            <button id="refresh-temp-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl glass-effect hover:bg-white/30 transition-colors w-full" aria-label="Buscar temperatura e meta">
+                            <button id="refresh-temp-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl btn-glass hover:bg-white/30 transition-colors w-full mt-4" aria-label="Buscar temperatura e meta">
                                 <i data-lucide="refresh-ccw" class="w-5 h-5"></i>
                                 <span>Atualizar Meta</span>
                             </button>
                         </div>
                     </div>
 
-                    <div>
-                        <h3 class="text-lg font-bold mb-3">Ações Adicionais</h3>
-                        <button id="reset-water-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl glass-effect hover:bg-white/30 transition-colors w-full" aria-label="Zerar Contador de Água">
-                            <i data-lucide="refresh-ccw" class="w-5 h-5"></i>
-                            <span>Zerar Contador de Água</span>
-                        </button>
+                    <div class="glass-card">
+                        <h3 class="text-lg font-bold mb-3">Notificações</h3>
+                        <p class="text-sm opacity-70 mb-3">Receba lembretes de hidratação.</p>
+                        <!-- Nova seção para lidar com a diferença entre iOS e outros navegadores -->
+                        <div id="notification-options">
+                            <!-- Este conteúdo será gerado dinamicamente via JS -->
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <div id="add-water-modal" class="hidden fixed inset-0 modal-overlay z-20 flex items-center justify-center">
-            <div class="w-full max-w-xs glass-effect rounded-3xl p-6 text-white flex flex-col items-center relative">
-                <h2 class="text-xl font-bold mb-6">Adicionar Água</h2>
-                <div class="grid grid-cols-3 gap-4 w-full mb-6">
-                    <button class="glass-effect rounded-xl p-4 text-center hover:bg-white/30 transition-colors add-shortcut-btn" data-amount="150">150ml</button>
-                    <button class="glass-effect rounded-xl p-4 text-center hover:bg-white/30 transition-colors add-shortcut-btn" data-amount="250">250ml</button>
-                    <button class="glass-effect rounded-xl p-4 text-center hover:bg-white/30 transition-colors add-shortcut-btn" data-amount="500">500ml</button>
-                </div>
-                <div class="w-full mb-6">
-                    <input id="custom-amount-input" type="number" placeholder="Ou digite um valor (ml)" class="glass-effect w-full rounded-xl px-4 py-3 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 bg-transparent" />
-                </div>
-                <div class="flex w-full gap-4">
-                    <button id="cancel-add-btn" class="flex-1 glass-effect rounded-xl py-3 hover:bg-white/20 transition-colors">Cancelar</button>
-                    <button id="confirm-add-btn" class="flex-1 bg-white text-blue-500 rounded-xl py-3 font-bold hover:bg-gray-200 transition-colors">Adicionar</button>
-                </div>
-            </div>
-        </div>
 
-        <div id="feedback-toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-30 p-4 rounded-xl shadow-lg transition-all duration-300 transform hidden text-white">
+        <div id="feedback-toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 p-4 rounded-xl shadow-lg transition-all duration-300 transform scale-90 opacity-0 hidden text-white">
             <p id="toast-message"></p>
         </div>
 
-        <nav id="bottom-nav" class="h-24 rounded-t-[30px] w-full mt-auto flex items-center justify-around text-white z-10">
-            <button id="stats-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20" aria-label="Ver estatísticas">
-                <i data-lucide="bar-chart-3" class="w-7 h-7"></i>
+        <nav id="bottom-nav" class="h-24 rounded-t-[30px] w-full mt-auto flex items-center justify-around text-white z-10 animate-fade-in md:glass-effect md:mt-0" style="animation-delay: 0.5s;">
+            <button id="stats-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20 btn-glass" aria-label="Abrir Dashboard">
+                <i data-lucide="layout-dashboard" class="w-7 h-7"></i>
             </button>
             <button id="add-water-nav-btn" class="w-20 h-20 rounded-full bg-white text-blue-500 text-5xl font-light flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300" aria-label="Adicionar água">
                 +
             </button>
-            <button id="settings-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20" aria-label="Abrir configurações">
+            <button id="settings-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20 btn-glass" aria-label="Abrir configurações">
                 <i data-lucide="settings" class="w-7 h-7"></i>
             </button>
         </nav>
     </div>
 
     <script>
-        // Inicializa os ícones Lucide
-        lucide.createIcons();
+        // --- Funções de áudio ---
+        const playChime = () => {
+            const synth = new Tone.Synth().toDestination();
+            synth.triggerAttackRelease("C5", "8n");
+        }
 
-        // Variáveis de estado
+        const playWaterDrop = () => {
+            const synth = new Tone.MembraneSynth().toDestination();
+            synth.triggerAttackRelease("C2", "8n");
+        }
+
+        const startAudioContext = async () => {
+            if (!audioContextStarted) {
+                await Tone.start();
+                audioContextStarted = true;
+            }
+        }
+        
+        let audioContextStarted = false;
+        let notificationIntervalId = null;
+
         let state = {
             currentWater: parseInt(localStorage.getItem('currentWater')) || 0,
             goalWater: parseInt(localStorage.getItem('goalWater')) || 2500,
             waterHistory: JSON.parse(localStorage.getItem('waterHistory')) || [0, 0, 0, 0, 0, 0, 0],
+            shortcutHistory: JSON.parse(localStorage.getItem('shortcutHistory')) || { '150': 0, '250': 0, '500': 0 },
             lastUpdateDate: localStorage.getItem('lastUpdateDate') || new Date().toDateString(),
-            currentPage: 'home',
             userWeight: parseInt(localStorage.getItem('userWeight')) || 70,
             recommendedGoalByTemperature: null,
             recommendedGoalByWeight: null,
             currentTemperature: null,
+            notificationsEnabled: localStorage.getItem('notificationsEnabled') === 'true' || false,
+            streakCount: parseInt(localStorage.getItem('streakCount')) || 0,
+            lastStreakDate: localStorage.getItem('lastStreakDate') || null,
         };
 
-        // Elementos do DOM
-        const pages = {
-            home: document.getElementById('home-page'),
-            stats: document.getElementById('stats-page'),
-            settings: document.getElementById('settings-page')
+        const modals = {
+            add: document.getElementById('add-water-modal'),
+            stats: document.getElementById('stats-modal'),
+            settings: document.getElementById('settings-modal')
         };
-        const pageTitleEl = document.getElementById('page-title');
         const waterDisplay = {
             current: document.getElementById('current-water-display'),
             goal: document.getElementById('goal-water-display')
@@ -207,91 +347,157 @@
             add: document.getElementById('add-water-nav-btn'),
             settings: document.getElementById('settings-nav-btn')
         };
-        const addModal = document.getElementById('add-water-modal');
-        const customAmountInput = document.getElementById('custom-amount-input');
+        const customAmountInput = modals.add.querySelector('#custom-amount-input');
         const toast = {
             el: document.getElementById('feedback-toast'),
             message: document.getElementById('toast-message')
         };
-        const charts = {
-            progress: new Chart(document.getElementById('progress-chart').getContext('2d'), { type: 'doughnut' }),
-            stats: new Chart(document.getElementById('stats-chart').getContext('2d'), { type: 'bar' })
+
+        let charts = {
+            progress: null,
+            stats: null,
+            distribution: null
         };
         
-        // Elementos da página de Configurações
         const settings = {
-            manualGoalInput: document.getElementById('manual-goal-input'),
-            saveManualBtn: document.getElementById('save-manual-goal-btn'),
-            weightInput: document.getElementById('weight-input'),
-            weightGoalDisplay: document.getElementById('weight-goal-display'),
-            weightGoalValue: document.getElementById('weight-goal-value'),
-            applyWeightBtn: document.getElementById('apply-weight-goal-btn'),
-            temperatureDisplay: document.getElementById('temperature-display'),
-            temperatureGoalDisplay: document.getElementById('temperature-goal-display'),
-            temperatureGoalValue: document.getElementById('temperature-goal-value'),
-            applyTempBtn: document.getElementById('apply-temp-goal-btn'),
-            refreshTempBtn: document.getElementById('refresh-temp-btn'),
-            resetBtn: document.getElementById('reset-water-btn'),
-            closeBtn: document.getElementById('close-settings-btn')
+            manualGoalInput: null,
+            saveManualBtn: null,
+            weightInput: null,
+            weightGoalDisplay: null,
+            weightGoalValue: null,
+            applyWeightBtn: null,
+            temperatureDisplay: null,
+            temperatureGoalDisplay: null,
+            temperatureGoalValue: null,
+            applyTempBtn: null,
+            refreshTempBtn: null,
+            notificationOptions: null,
         };
-        const stats = {
-            closeBtn: document.getElementById('close-stats-btn')
+        const statsDisplay = {
+            streak: null,
+            average: null,
         };
-        
-        // Funções
+
         const saveState = () => {
             localStorage.setItem('currentWater', state.currentWater);
             localStorage.setItem('goalWater', state.goalWater);
             localStorage.setItem('waterHistory', JSON.stringify(state.waterHistory));
+            localStorage.setItem('shortcutHistory', JSON.stringify(state.shortcutHistory));
             localStorage.setItem('lastUpdateDate', state.lastUpdateDate);
             localStorage.setItem('userWeight', state.userWeight);
+            localStorage.setItem('notificationsEnabled', state.notificationsEnabled);
+            localStorage.setItem('streakCount', state.streakCount);
+            localStorage.setItem('lastStreakDate', state.lastStreakDate);
         };
 
         const updateUI = () => {
             waterDisplay.current.textContent = state.currentWater;
             waterDisplay.goal.textContent = `/ ${state.goalWater} ml`;
-            settings.manualGoalInput.value = state.goalWater;
-            settings.weightInput.value = state.userWeight;
+
+            if (settings.manualGoalInput) {
+                settings.manualGoalInput.value = state.goalWater;
+            }
+            if (settings.weightInput) {
+                settings.weightInput.value = state.userWeight;
+            }
             
-            // Atualiza gráfico de progresso
-            charts.progress.data = {
-                datasets: [{
-                    data: [state.currentWater, Math.max(0, state.goalWater - state.currentWater)],
-                    backgroundColor: ['#ffffff', 'rgba(255, 255, 255, 0.1)'],
-                    borderWidth: 0,
-                    borderRadius: 20,
-                }]
-            };
-            charts.progress.options = { responsive: true, cutout: '80%', plugins: { legend: { display: false }, tooltip: { enabled: false } } };
-            charts.progress.update();
+            // Lógica de renderização das opções de notificação
+            if (settings.notificationOptions) {
+                if (isIOS()) {
+                    settings.notificationOptions.innerHTML = `
+                        <p class="text-sm opacity-70 mb-3">
+                            No iOS, use o Calendário da Apple para receber lembretes de hidratação.
+                        </p>
+                        <button id="create-calendar-event-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl bg-white text-blue-500 font-bold hover:bg-gray-200 transition-colors mt-4 w-full" aria-label="Criar lembrete no calendário">
+                            <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+                            <span>Criar Lembrete no Calendário</span>
+                        </button>
+                    `;
+                    document.getElementById('create-calendar-event-btn').addEventListener('click', createiOSCalendarEvent);
+                } else {
+                    if (state.notificationsEnabled) {
+                        settings.notificationOptions.innerHTML = `
+                            <p class="text-sm opacity-70 mb-3">
+                                Notificações ativadas! Você receberá um lembrete a cada 30 minutos.
+                            </p>
+                            <button id="toggle-notifications-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors mt-4 w-full" aria-label="Gerenciar notificações">
+                                <i data-lucide="bell-off" class="w-5 h-5"></i>
+                                <span>Desativar Notificações</span>
+                            </button>
+                        `;
+                    } else {
+                        settings.notificationOptions.innerHTML = `
+                            <p class="text-sm opacity-70 mb-3">
+                                Receba lembretes de hidratação a cada 30 minutos.
+                            </p>
+                            <button id="toggle-notifications-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl bg-white text-blue-500 font-bold hover:bg-gray-200 transition-colors mt-4 w-full" aria-label="Gerenciar notificações">
+                                <i data-lucide="bell" class="w-5 h-5"></i>
+                                <span>Ativar Notificações</span>
+                            </button>
+                        `;
+                    }
+                    document.getElementById('toggle-notifications-btn').addEventListener('click', toggleNotifications);
+                }
+            }
+            lucide.createIcons();
 
-            // Atualiza gráfico de estatísticas
-            charts.stats.data = {
-                labels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Hoje'],
-                datasets: [{
-                    label: 'Consumo (ml)',
-                    data: state.waterHistory,
-                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                    borderColor: 'rgba(255, 255, 255, 0.8)',
-                    borderWidth: 1,
-                    borderRadius: 8,
-                }, {
-                    label: 'Meta',
-                    data: Array(7).fill(state.goalWater),
-                    type: 'line',
-                    borderColor: '#ffffff',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    fill: false,
-                }]
-            };
-            charts.stats.options = {
-                responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { x: { grid: { display: false }, ticks: { color: 'white' } }, y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.2)' }, ticks: { color: 'white' } } }
-            };
-            charts.stats.update();
+            if (charts.progress) {
+                charts.progress.data = {
+                    datasets: [{
+                        data: [state.currentWater, Math.max(0, state.goalWater - state.currentWater)],
+                        backgroundColor: ['#ffffff', 'rgba(255, 255, 255, 0.1)'],
+                        borderWidth: 0,
+                        borderRadius: 20,
+                        hoverOffset: 10
+                    }]
+                };
+                charts.progress.options = { responsive: true, cutout: '80%', plugins: { legend: { display: false }, tooltip: { enabled: false } } };
+                charts.progress.update();
+            }
 
-            // Atualiza a visualização da meta por peso
+            if (charts.stats) {
+                charts.stats.data = {
+                    labels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Hoje'],
+                    datasets: [{
+                        label: 'Consumo (ml)',
+                        data: state.waterHistory,
+                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        borderColor: 'rgba(255, 255, 255, 0.8)',
+                        borderWidth: 1,
+                        borderRadius: 8,
+                    }, {
+                        label: 'Meta',
+                        data: Array(7).fill(state.goalWater),
+                        type: 'line',
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false,
+                    }]
+                };
+                charts.stats.options = {
+                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false }, ticks: { color: 'white' } }, y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.2)' }, ticks: { color: 'white' } } }
+                };
+                charts.stats.update();
+            }
+
+            if (charts.distribution) {
+                charts.distribution.data = {
+                    labels: ['150ml', '250ml', '500ml'],
+                    datasets: [{
+                        data: [state.shortcutHistory['150'], state.shortcutHistory['250'], state.shortcutHistory['500']],
+                        backgroundColor: ['#ffffff', 'rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0.3)'],
+                        borderColor: '#ffffff',
+                        borderWidth: 1
+                    }]
+                };
+                charts.distribution.options = {
+                    responsive: true, maintainAspectRatio: false, cutout: '50%', plugins: { legend: { display: true, position: 'bottom', labels: { color: 'white' } } }
+                };
+                charts.distribution.update();
+            }
+
             if (state.recommendedGoalByWeight) {
                 settings.weightGoalDisplay.classList.remove('hidden');
                 settings.weightGoalValue.textContent = `${state.recommendedGoalByWeight} ml`;
@@ -299,12 +505,11 @@
                 settings.weightGoalDisplay.classList.add('hidden');
             }
 
-            // Atualiza a visualização da meta por temperatura
             if (state.currentTemperature) {
                 settings.temperatureDisplay.innerHTML = `<i data-lucide="thermometer" class="w-4 h-4"></i> Temperatura atual: ${state.currentTemperature}°C`;
                 lucide.createIcons();
             } else {
-                settings.temperatureDisplay.innerHTML = `<i data-lucide="thermometer" class="w-4 h-4"></i> Buscando temperatura...`;
+                settings.temperatureDisplay.innerHTML = `<i data-lucide="thermometer" class="w-4 h-4"></i> Para calcular a meta por temperatura, clique em 'Atualizar Meta'.`;
                 lucide.createIcons();
             }
             if (state.recommendedGoalByTemperature) {
@@ -313,64 +518,164 @@
             } else {
                 settings.temperatureGoalDisplay.classList.add('hidden');
             }
-        };
-
-        const showPage = (pageName) => {
-            const allPages = Object.values(pages);
-            allPages.forEach(page => page.classList.add('hidden'));
-
-            const targetPage = pages[pageName];
-            targetPage.classList.remove('hidden');
             
-            // Ajusta a animação
-            allPages.forEach(page => {
-                page.classList.add('opacity-0', '-translate-x-full');
-            });
-            targetPage.classList.remove('opacity-0', '-translate-x-full');
-
-            state.currentPage = pageName;
-            
-            // Atualiza título do header
-            const titles = { home: 'AquaFlow', stats: 'Estatísticas', settings: 'Configurações' };
-            pageTitleEl.textContent = titles[pageName];
-            
-            // Atualiza a navegação inferior
-            Object.values(navButtons).forEach(btn => btn.classList.remove('bg-white/20', 'cursor-default'));
-            navButtons[pageName]?.classList.add('bg-white/20', 'cursor-default');
-
-            if (pageName === 'stats' || pageName === 'settings') {
-                navButtons.add.classList.add('opacity-50');
-            } else {
-                navButtons.add.classList.remove('opacity-50');
+            // Atualiza o contador de streaks e a média
+            if (statsDisplay.average && statsDisplay.streak) {
+                const dailyAverage = state.waterHistory.reduce((sum, current) => sum + current, 0) / state.waterHistory.length;
+                statsDisplay.average.textContent = Math.round(dailyAverage);
+                statsDisplay.streak.textContent = state.streakCount;
             }
-
-            updateUI();
         };
 
-        const showModal = (modalEl, show) => {
-            if (show) {
-                modalEl.classList.remove('hidden');
-                setTimeout(() => { modalEl.style.opacity = 1; }, 10);
+        // --- Funções de Notificação ---
+        const scheduleNotification = () => {
+            if (Notification.permission === 'granted') {
+                const sendNotification = () => {
+                    new Notification('Hora de beber água!', {
+                        body: 'Mantenha-se hidratado para atingir sua meta diária.',
+                        icon: 'https://placehold.co/100x100/ffffff/000000?text=💧'
+                    });
+                };
+                // Envia uma notificação inicial e depois a cada 30 minutos (1800000 ms)
+                sendNotification();
+                notificationIntervalId = setInterval(sendNotification, 1800000);
+            }
+        }
+
+        const cancelNotifications = () => {
+            if (notificationIntervalId) {
+                clearInterval(notificationIntervalId);
+                notificationIntervalId = null;
+            }
+        }
+
+        const toggleNotifications = async () => {
+            startAudioContext();
+            
+            if (state.notificationsEnabled) {
+                // Desativar notificações
+                cancelNotifications();
+                state.notificationsEnabled = false;
+                saveState();
+                showToast('Notificações desativadas.', false);
             } else {
-                modalEl.style.opacity = 0;
-                setTimeout(() => { modalEl.classList.add('hidden'); }, 300);
+                // Ativar notificações
+                if (!('Notification' in window)) {
+                    showToast('Este navegador não suporta notificações.', true);
+                    return;
+                }
+
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    state.notificationsEnabled = true;
+                    saveState();
+                    showToast('Notificações ativadas! Você receberá lembretes.', false);
+                    scheduleNotification();
+                } else if (permission === 'denied') {
+                    state.notificationsEnabled = false;
+                    saveState();
+                    showToast('As notificações foram bloqueadas. Você precisa ativá-las nas configurações do navegador.', true);
+                } else {
+                    state.notificationsEnabled = false;
+                    saveState();
+                    showToast('Permissão de notificação não concedida.', true);
+                }
+            }
+            updateUI();
+        }
+
+        // --- Funções de Notificação do iOS ---
+        const createiOSCalendarEvent = () => {
+            const startDate = new Date();
+            const endDate = new Date(startDate.getTime() + 30 * 60000); // Lembrete a cada 30 minutos
+            
+            const formatForICS = (date) => {
+                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            };
+            
+            const eventData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//AquaFlow//Lembrete de Hidratação//PT-BR
+BEGIN:VEVENT
+UID:${Date.now()}@aquaflow.app
+DTSTAMP:${formatForICS(new Date())}
+DTSTART:${formatForICS(startDate)}
+DTEND:${formatForICS(endDate)}
+SUMMARY:💧 Hora de beber água!
+DESCRIPTION:Lembrete de hidratação. Mantenha-se hidratado para atingir sua meta diária.
+URL:${window.location.href}
+END:VEVENT
+END:VCALENDAR`;
+
+            const blob = new Blob([eventData], { type: 'text/calendar' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'aquaflow-lembrete.ics';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            showToast('Lembrete de hidratação criado no seu Calendário!');
+        }
+
+        const showModal = (modalId) => {
+            startAudioContext();
+            playChime();
+            Object.values(modals).forEach(modal => {
+                modal.classList.remove('is-visible');
+            });
+            const modalEl = modals[modalId];
+            if (modalEl) {
+                modalEl.classList.add('is-visible');
+            }
+            if (modalId === 'stats') {
+                if (!charts.distribution) {
+                    charts.distribution = new Chart(document.getElementById('distribution-chart').getContext('2d'), { type: 'doughnut' });
+                }
+                updateUI();
+            }
+        };
+
+        const closeModal = (modalId) => {
+            playChime();
+            const modalEl = modals[modalId];
+            if (modalEl) {
+                modalEl.classList.remove('is-visible');
             }
         };
 
         const showToast = (message, isError = false) => {
+            playChime();
             toast.message.textContent = message;
             toast.el.classList.remove('bg-green-500', 'bg-red-500');
             toast.el.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
             toast.el.classList.remove('hidden');
+            setTimeout(() => {
+                toast.el.classList.remove('scale-90', 'opacity-0');
+                toast.el.classList.add('scale-100', 'opacity-100');
+            }, 10);
 
             setTimeout(() => {
-                toast.el.classList.add('hidden');
+                toast.el.classList.remove('scale-100', 'opacity-100');
+                toast.el.classList.add('scale-90', 'opacity-0');
+                setTimeout(() => { toast.el.classList.add('hidden'); }, 300);
             }, 3000);
         };
 
         const handleDailyReset = () => {
             const today = new Date().toDateString();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayString = yesterday.toDateString();
+            
             if (today !== state.lastUpdateDate) {
+                if (state.lastUpdateDate === yesterdayString && state.currentWater >= state.goalWater) {
+                    state.streakCount++;
+                } else {
+                    state.streakCount = 0;
+                }
                 state.waterHistory.shift();
                 state.waterHistory.push(0);
                 state.currentWater = 0;
@@ -382,38 +687,71 @@
         };
 
         const addWater = (amount) => {
+            playWaterDrop();
             state.currentWater += amount;
             state.waterHistory[state.waterHistory.length - 1] += amount;
+            
+            if (state.shortcutHistory[amount]) {
+                state.shortcutHistory[amount] += amount;
+            }
+
+            showToast(`Adicionado ${amount}ml de água.`);
             saveState();
             updateUI();
-            showModal(addModal, false);
+            closeModal('add');
         };
-
+        
         const handleFetchTemperature = async () => {
-            settings.refreshTempBtn.querySelector('i').classList.add('animate-spin');
+            startAudioContext();
+
+            const refreshIcon = settings.refreshTempBtn.querySelector('i');
+            refreshIcon.classList.add('animate-spin');
             settings.refreshTempBtn.disabled = true;
-            settings.temperatureDisplay.innerHTML = `<i data-lucide="thermometer" class="w-4 h-4"></i> Buscando temperatura...`;
+            settings.temperatureDisplay.innerHTML = `<i data-lucide="map-pin" class="w-4 h-4"></i> Buscando localização...`;
             lucide.createIcons();
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            const simulatedTemp = 20 + Math.floor(Math.random() * 15);
-            state.currentTemperature = simulatedTemp;
-            
-            let newRecommendedGoal = state.goalWater;
-            if (simulatedTemp >= 30) {
-              newRecommendedGoal = Math.floor(state.goalWater * 1.3);
-            } else if (simulatedTemp >= 25) {
-              newRecommendedGoal = Math.floor(state.goalWater * 1.1);
-            } else {
-              newRecommendedGoal = state.goalWater;
+            if (!navigator.geolocation) {
+                handleLocationError('Geolocation não é suportado pelo seu navegador.');
+                return;
             }
-            state.recommendedGoalByTemperature = newRecommendedGoal;
 
-            settings.refreshTempBtn.querySelector('i').classList.remove('animate-spin');
-            settings.refreshTempBtn.disabled = false;
-            updateUI();
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    settings.temperatureDisplay.innerHTML = `<i data-lucide="thermometer" class="w-4 h-4"></i> Buscando temperatura...`;
+                    lucide.createIcons();
+                    
+                    const simulatedTemp = 20 + Math.floor(Math.random() * 15);
+                    state.currentTemperature = simulatedTemp;
+                    
+                    let newRecommendedGoal = state.goalWater;
+                    if (simulatedTemp >= 30) {
+                        newRecommendedGoal = Math.floor(state.goalWater * 1.3);
+                    } else if (simulatedTemp >= 25) {
+                        newRecommendedGoal = Math.floor(state.goalWater * 1.1);
+                    } else {
+                        newRecommendedGoal = state.goalWater;
+                    }
+                    state.recommendedGoalByTemperature = newRecommendedGoal;
+                    
+                    refreshIcon.classList.remove('animate-spin');
+                    settings.refreshTempBtn.disabled = false;
+                    updateUI();
+                },
+                (error) => {
+                    handleLocationError('Não foi possível obter a sua localização.');
+                }
+            );
         };
+        
+        const handleLocationError = (message) => {
+            const refreshIcon = settings.refreshTempBtn.querySelector('i');
+            refreshIcon.classList.remove('animate-spin');
+            settings.refreshTempBtn.disabled = false;
+            settings.temperatureDisplay.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4"></i> ${message}`;
+            lucide.createIcons();
+            state.recommendedGoalByTemperature = null;
+            updateUI();
+        }
 
         const calculateGoalByWeight = () => {
             if (state.userWeight > 0) {
@@ -424,77 +762,116 @@
             updateUI();
         };
 
+        const isIOS = () => {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent);
+        }
 
-        // Event Listeners
-        navButtons.add.addEventListener('click', () => showModal(addModal, true));
-        navButtons.stats.addEventListener('click', () => showPage('stats'));
-        navButtons.settings.addEventListener('click', () => showPage('settings'));
+        // --- Event Listeners ---
+        const setupEventListeners = () => {
+            navButtons.add.addEventListener('click', () => showModal('add'));
+            navButtons.stats.addEventListener('click', () => showModal('stats'));
+            navButtons.settings.addEventListener('click', () => showModal('settings'));
+            
+            modals.add.addEventListener('click', (e) => {
+                if (e.target === modals.add) closeModal('add');
+            });
+            modals.stats.addEventListener('click', (e) => {
+                if (e.target === modals.stats) closeModal('stats');
+            });
+            modals.settings.addEventListener('click', (e) => {
+                if (e.target === modals.settings) closeModal('settings');
+            });
+            
+            modals.add.querySelector('#close-add-modal-btn').addEventListener('click', () => closeModal('add'));
+            modals.stats.querySelector('#close-stats-modal-btn').addEventListener('click', () => closeModal('stats'));
+            modals.settings.querySelector('#close-settings-modal-btn').addEventListener('click', () => closeModal('settings'));
 
-        stats.closeBtn.addEventListener('click', () => showPage('home'));
-        settings.closeBtn.addEventListener('click', () => showPage('home'));
+            modals.add.querySelectorAll('.add-shortcut-btn').forEach(btn => {
+                btn.addEventListener('click', () => addWater(parseInt(btn.dataset.amount)));
+            });
+            modals.add.querySelector('#confirm-add-btn').addEventListener('click', () => {
+                const amount = parseInt(customAmountInput.value);
+                if (amount > 0) {
+                    addWater(amount);
+                    customAmountInput.value = '';
+                }
+            });
 
-        addModal.querySelector('#cancel-add-btn').addEventListener('click', () => showModal(addModal, false));
-        addModal.querySelectorAll('.add-shortcut-btn').forEach(btn => {
-            btn.addEventListener('click', () => addWater(parseInt(btn.dataset.amount)));
-        });
-        addModal.querySelector('#confirm-add-btn').addEventListener('click', () => {
-            const amount = parseInt(customAmountInput.value);
-            if (amount > 0) {
-                addWater(amount);
-                customAmountInput.value = '';
-            }
-        });
+            settings.saveManualBtn.addEventListener('click', () => {
+                const newGoal = parseInt(settings.manualGoalInput.value);
+                if (!isNaN(newGoal) && newGoal > 0) {
+                    state.goalWater = newGoal;
+                    showToast('Meta salva com sucesso!');
+                    saveState();
+                    updateUI();
+                } else {
+                    showToast('Por favor, insira um valor válido para a meta.', true);
+                }
+            });
 
-        settings.saveManualBtn.addEventListener('click', () => {
-            const newGoal = parseInt(settings.manualGoalInput.value);
-            if (!isNaN(newGoal) && newGoal > 0) {
-                state.goalWater = newGoal;
-                showToast('Meta salva com sucesso!');
+            settings.weightInput.addEventListener('input', (e) => {
+                state.userWeight = parseInt(e.target.value) || 0;
+                calculateGoalByWeight();
                 saveState();
-                updateUI();
-            } else {
-                showToast('Por favor, insira um valor válido para a meta.', true);
-            }
-        });
+            });
 
-        settings.weightInput.addEventListener('input', (e) => {
-            state.userWeight = parseInt(e.target.value) || 0;
-            calculateGoalByWeight();
-            saveState();
-        });
+            settings.applyWeightBtn.addEventListener('click', () => {
+                if (state.recommendedGoalByWeight) {
+                    state.goalWater = state.recommendedGoalByWeight;
+                    showToast(`Meta atualizada para ${state.recommendedGoalByWeight} ml!`);
+                    saveState();
+                    updateUI();
+                }
+            });
 
-        settings.applyWeightBtn.addEventListener('click', () => {
-            if (state.recommendedGoalByWeight) {
-                state.goalWater = state.recommendedGoalByWeight;
-                showToast(`Meta atualizada para ${state.recommendedGoalByWeight} ml!`);
-                saveState();
-                updateUI();
-            }
-        });
+            settings.applyTempBtn.addEventListener('click', () => {
+                if (state.recommendedGoalByTemperature) {
+                    state.goalWater = state.recommendedGoalByTemperature;
+                    showToast(`Meta atualizada para ${state.recommendedGoalByTemperature} ml!`);
+                    saveState();
+                    updateUI();
+                }
+            });
 
-        settings.applyTempBtn.addEventListener('click', () => {
-            if (state.recommendedGoalByTemperature) {
-                state.goalWater = state.recommendedGoalByTemperature;
-                showToast(`Meta atualizada para ${state.recommendedGoalByTemperature} ml!`);
-                saveState();
-                updateUI();
-            }
-        });
-
-        settings.refreshTempBtn.addEventListener('click', handleFetchTemperature);
-        settings.resetBtn.addEventListener('click', () => {
-            state.currentWater = 0;
-            showToast('Contador de água zerado!');
-            saveState();
-            updateUI();
-        });
-
-        // Inicialização
-        handleDailyReset();
-        updateUI();
-        calculateGoalByWeight();
-        // A busca por temperatura será chamada automaticamente ao entrar na página de settings
+            settings.refreshTempBtn.addEventListener('click', handleFetchTemperature);
+        }
         
+        // --- Inicialização ---
+        window.onload = () => {
+            lucide.createIcons();
+
+            // Inicializa os elementos de settings e stats
+            settings.manualGoalInput = modals.settings.querySelector('#manual-goal-input');
+            settings.saveManualBtn = modals.settings.querySelector('#save-manual-goal-btn');
+            settings.weightInput = modals.settings.querySelector('#weight-input');
+            settings.weightGoalDisplay = modals.settings.querySelector('#weight-goal-display');
+            settings.weightGoalValue = modals.settings.querySelector('#weight-goal-value');
+            settings.applyWeightBtn = modals.settings.querySelector('#apply-weight-goal-btn');
+            settings.temperatureDisplay = modals.settings.querySelector('#temperature-display');
+            settings.temperatureGoalDisplay = modals.settings.querySelector('#temperature-goal-display');
+            settings.temperatureGoalValue = modals.settings.querySelector('#temperature-goal-value');
+            settings.applyTempBtn = modals.settings.querySelector('#apply-temp-goal-btn');
+            settings.refreshTempBtn = modals.settings.querySelector('#refresh-temp-btn');
+            settings.notificationOptions = modals.settings.querySelector('#notification-options');
+
+            statsDisplay.streak = modals.stats.querySelector('#streak-count');
+            statsDisplay.average = modals.stats.querySelector('#average-daily');
+
+            // Inicializa os gráficos após o DOM estar pronto
+            charts.progress = new Chart(document.getElementById('progress-chart').getContext('2d'), { type: 'doughnut' });
+            charts.stats = new Chart(document.getElementById('stats-chart').getContext('2d'), { type: 'bar' });
+
+            handleDailyReset();
+            updateUI();
+            calculateGoalByWeight();
+            setupEventListeners();
+            
+            // Verifica o estado das notificações na inicialização
+            if (!isIOS() && state.notificationsEnabled) {
+                scheduleNotification();
+            }
+        };
     </script>
 </body>
 </html>
