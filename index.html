@@ -4,26 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acqua Flow - Seu Aplicativo de Hidratação</title>
-    <!-- Importação da fonte Inter com pesos adicionais para melhor suporte ao Tailwind -->
+    <!-- Importação da fonte Nunito -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/tone@14.9.1/build/Tone.js"></script>
     <style>
-        /* Aplica a fonte Inter e ajusta a altura da linha para maior legibilidade */
+        /* Aplica a fonte Nunito */
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Nunito', sans-serif;
             line-height: 1.5;
         }
 
-        @keyframes animate-background {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+        /* Animação de pulso removida, pois o fundo agora é estático */
         @keyframes liquid-pulse {
             0% { box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
             50% { box-shadow: 0 10px 40px 0 rgba(31, 38, 135, 0.5); }
@@ -131,7 +127,8 @@
         }
     </style>
 </head>
-<body class="font-sans bg-gradient-to-br from-sky-500 to-indigo-600 h-screen overflow-hidden flex items-center justify-center p-4 text-white" style="background-size: 200% 200%; animation: animate-background 15s infinite ease-in-out;">
+<!-- O background agora usa a imagem fornecida, cobrindo toda a tela. -->
+<body class="font-sans h-screen overflow-hidden flex items-center justify-center p-4 text-white" style="background-image: url('https://img.freepik.com/fotos-premium/3d-monocromatico-rendem-o-fundo-abstrato-do-fluxo-de-vidro-moderno-formas-liquidas-esferas-de-vidro_363039-1825.jpg'); background-size: cover; background-position: center;">
 
     <div class="w-full h-full flex flex-col items-center justify-between md:w-full md:max-w-sm md:h-[90vh] md:max-h-[800px] md:bg-gray-900/60 md:rounded-[40px] md:shadow-2xl md:overflow-hidden md:relative md:p-6 md:sm:p-8">
 
@@ -140,7 +137,7 @@
             <p class="text-sm opacity-80 mt-1">Olá! Mantenha-se hidratado.</p>
         </header>
 
-        <!-- NOVO: Círculo de Progresso -->
+        <!-- Círculo de Progresso -->
         <div id="dashboard-container" class="flex-1 flex flex-col items-center justify-center text-center animate-fade-in">
             <div id="progress-circle-container" class="relative w-64 h-64 md:w-72 md:h-72 flex items-center justify-center">
                 <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
@@ -319,14 +316,28 @@
 
     <script>
         // --- Funções de áudio ---
-        const playChime = () => {
-            const synth = new Tone.Synth().toDestination();
-            synth.triggerAttackRelease("C5", "8n");
+        const playBubblePop = () => {
+            const synth = new Tone.Synth({
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 },
+            }).toDestination();
+            synth.frequency.setValueAtTime("C5", Tone.now());
+            synth.frequency.linearRampToValueAtTime("G5", Tone.now() + 0.05);
+            synth.triggerAttackRelease("16n");
         }
 
-        const playWaterDrop = () => {
-            const synth = new Tone.MembraneSynth().toDestination();
-            synth.triggerAttackRelease("C2", "8n");
+        const playWaterPour = () => {
+            const noiseSynth = new Tone.NoiseSynth({
+                noise: { type: 'brown' },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0 },
+            }).toDestination();
+            noiseSynth.triggerAttackRelease("8n");
+
+            const synth = new Tone.Synth({
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.001, decay: 0.1, sustain: 0.1, release: 0.1 },
+            }).toDestination();
+            synth.triggerAttackRelease("G2", "8n", Tone.now() + 0.05);
         }
 
         const startAudioContext = async () => {
@@ -423,7 +434,6 @@
             let progress = state.currentWater / state.goalWater;
             if (isNaN(progress) || !isFinite(progress)) progress = 0;
             
-            // Limita o progresso visual a 100% para o anel não ultrapassar
             const visualProgress = Math.min(progress, 1);
             const offset = circumference - visualProgress * circumference;
             progressDisplay.circle.style.strokeDashoffset = offset;
@@ -614,14 +624,14 @@
             
             const formatForICS = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
             
-            const eventData = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Acqua Flow//Lembrete de Hidratação//PT-BR\nBEGIN:VEVENT\nUID:${Date.now()}@Acqua Flow.app\nDTSTAMP:${formatForICS(new Date())}\nDTSTART:${formatForICS(startDate)}\nDTEND:${formatForICS(endDate)}\nSUMMARY:💧 Hora de beber água!\nDESCRIPTION:Lembrete de hidratação. Mantenha-se hidratado para atingir sua meta diária.\nURL:${window.location.href}\nEND:VEVENT\nEND:VCALENDAR`;
+            const eventData = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Acqua Flow//Lembrete de Hidratação//PT-BR\nBEGIN:VEVENT\nUID:${Date.now()}@acquaflow.app\nDTSTAMP:${formatForICS(new Date())}\nDTSTART:${formatForICS(startDate)}\nDTEND:${formatForICS(endDate)}\nSUMMARY:💧 Hora de beber água!\nDESCRIPTION:Lembrete de hidratação. Mantenha-se hidratado para atingir sua meta diária.\nURL:${window.location.href}\nEND:VEVENT\nEND:VCALENDAR`;
 
             const blob = new Blob([eventData], { type: 'text/calendar' });
             const url = URL.createObjectURL(blob);
             
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Acqua Flow-lembrete.ics';
+            a.download = 'acquaflow-lembrete.ics';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -631,7 +641,7 @@
 
         const showModal = (modalId) => {
             startAudioContext();
-            playChime();
+            playBubblePop();
             Object.values(modals).forEach(modal => modal.classList.remove('is-visible'));
             const modalEl = modals[modalId];
             if (modalEl) modalEl.classList.add('is-visible');
@@ -642,13 +652,13 @@
         };
 
         const closeModal = (modalId) => {
-            playChime();
+            playBubblePop();
             const modalEl = modals[modalId];
             if (modalEl) modalEl.classList.remove('is-visible');
         };
 
         const showToast = (message, isError = false) => {
-            playChime();
+            playBubblePop();
             toast.message.textContent = message;
             toast.el.className = `fixed bottom-24 left-1/2 -translate-x-1/2 z-30 p-4 rounded-xl shadow-lg transition-all duration-300 transform text-white ${isError ? 'bg-red-500' : 'bg-green-500'}`;
             toast.el.classList.remove('scale-90', 'opacity-0');
@@ -688,7 +698,7 @@
         };
 
         const addWater = (amount) => {
-            playWaterDrop();
+            playWaterPour();
             state.currentWater += amount;
             state.waterHistory[state.waterHistory.length - 1] += amount;
             
@@ -780,43 +790,53 @@
                 }
             });
 
-            settings.saveManualBtn.addEventListener('click', () => {
-                const newGoal = parseInt(settings.manualGoalInput.value);
-                if (!isNaN(newGoal) && newGoal > 0) {
-                    state.goalWater = newGoal;
-                    showToast('Meta salva com sucesso!');
+            if(settings.saveManualBtn) {
+                settings.saveManualBtn.addEventListener('click', () => {
+                    const newGoal = parseInt(settings.manualGoalInput.value);
+                    if (!isNaN(newGoal) && newGoal > 0) {
+                        state.goalWater = newGoal;
+                        showToast('Meta salva com sucesso!');
+                        saveState();
+                        updateUI();
+                    } else {
+                        showToast('Por favor, insira um valor válido para a meta.', true);
+                    }
+                });
+            }
+
+            if(settings.weightInput) {
+                settings.weightInput.addEventListener('input', (e) => {
+                    state.userWeight = parseInt(e.target.value) || 0;
+                    calculateGoalByWeight();
                     saveState();
-                    updateUI();
-                } else {
-                    showToast('Por favor, insira um valor válido para a meta.', true);
-                }
-            });
+                });
+            }
 
-            settings.weightInput.addEventListener('input', (e) => {
-                state.userWeight = parseInt(e.target.value) || 0;
-                calculateGoalByWeight();
-                saveState();
-            });
+            if(settings.applyWeightBtn) {
+                settings.applyWeightBtn.addEventListener('click', () => {
+                    if (state.recommendedGoalByWeight) {
+                        state.goalWater = state.recommendedGoalByWeight;
+                        showToast(`Meta atualizada para ${state.recommendedGoalByWeight} ml!`);
+                        saveState();
+                        updateUI();
+                    }
+                });
+            }
 
-            settings.applyWeightBtn.addEventListener('click', () => {
-                if (state.recommendedGoalByWeight) {
-                    state.goalWater = state.recommendedGoalByWeight;
-                    showToast(`Meta atualizada para ${state.recommendedGoalByWeight} ml!`);
-                    saveState();
-                    updateUI();
-                }
-            });
+            if(settings.applyTempBtn) {
+                settings.applyTempBtn.addEventListener('click', () => {
+                    if (state.recommendedGoalByTemperature) {
+                        state.goalWater = state.recommendedGoalByTemperature;
+                        showToast(`Meta atualizada para ${state.recommendedGoalByTemperature} ml!`);
+                        saveState();
+                        updateUI();
+                    }
+                });
+            }
 
-            settings.applyTempBtn.addEventListener('click', () => {
-                if (state.recommendedGoalByTemperature) {
-                    state.goalWater = state.recommendedGoalByTemperature;
-                    showToast(`Meta atualizada para ${state.recommendedGoalByTemperature} ml!`);
-                    saveState();
-                    updateUI();
-                }
-            });
-
-            settings.refreshTempBtn.addEventListener('click', handleFetchTemperature);
+            if(settings.refreshTempBtn) {
+                settings.refreshTempBtn.addEventListener('click', handleFetchTemperature);
+            }
         }
         
         // --- Inicialização ---
@@ -829,11 +849,13 @@
             settings.weightInput = modals.settings.querySelector('#weight-input');
             settings.weightGoalDisplay = modals.settings.querySelector('#weight-goal-display');
             settings.weightGoalValue = modals.settings.querySelector('#weight-goal-value');
+            // FIX: Corrected the selector ID from #apply-weight-btn to #apply-weight-goal-btn
             settings.applyWeightBtn = modals.settings.querySelector('#apply-weight-goal-btn');
             settings.temperatureDisplay = modals.settings.querySelector('#temperature-display');
             settings.temperatureGoalDisplay = modals.settings.querySelector('#temperature-goal-display');
             settings.temperatureGoalValue = modals.settings.querySelector('#temperature-goal-value');
-            settings.applyTempBtn = modals.settings.querySelector('#apply-temp-btn');
+            // FIX: Corrected the selector ID from #apply-temp-btn to #apply-temp-goal-btn
+            settings.applyTempBtn = modals.settings.querySelector('#apply-temp-goal-btn');
             settings.refreshTempBtn = modals.settings.querySelector('#refresh-temp-btn');
             settings.notificationOptions = modals.settings.querySelector('#notification-options');
 
