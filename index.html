@@ -4,11 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AquaFlow - Seu Aplicativo de Hidratação</title>
+    <!-- Importação da fonte Inter com pesos adicionais para melhor suporte ao Tailwind -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/tone@14.9.1/build/Tone.js"></script>
     <style>
+        /* Aplica a fonte Inter e ajusta a altura da linha para maior legibilidade */
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.5;
+        }
+
         @keyframes animate-background {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -23,7 +33,7 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
+        
         /* Estilo da barra de rolagem */
         ::-webkit-scrollbar {
             width: 8px;
@@ -123,23 +133,36 @@
 </head>
 <body class="font-sans bg-gradient-to-br from-sky-500 to-indigo-600 h-screen overflow-hidden flex items-center justify-center p-4 text-white" style="background-size: 200% 200%; animation: animate-background 15s infinite ease-in-out;">
 
-    <div class="w-full h-full flex flex-col items-center justify-between md:w-full md:max-w-sm md:h-[90vh] md:max-h-[800px] md:glass-effect md:rounded-[40px] md:shadow-2xl md:overflow-hidden md:relative md:p-6 md:sm:p-8">
+    <div class="w-full h-full flex flex-col items-center justify-between md:w-full md:max-w-sm md:h-[90vh] md:max-h-[800px] md:bg-gray-900/60 md:rounded-[40px] md:shadow-2xl md:overflow-hidden md:relative md:p-6 md:sm:p-8">
 
         <header id="header" class="flex flex-col text-white z-10 animate-fade-in w-full md:w-auto md:mb-8">
             <h1 id="page-title" class="font-bold text-3xl capitalize">AquaFlow</h1>
             <p class="text-sm opacity-80 mt-1">Olá! Mantenha-se hidratado.</p>
         </header>
 
+        <!-- NOVO: Círculo de Progresso -->
         <div id="dashboard-container" class="flex-1 flex flex-col items-center justify-center text-center animate-fade-in">
-            <div class="relative w-64 h-64 mb-10">
-                <canvas id="progress-chart"></canvas>
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white">
-                    <span id="current-water-display" class="text-6xl font-bold">0</span>
-                    <span id="goal-water-display" class="text-lg opacity-80 block mt-1">/ 2500 ml</span>
+            <div id="progress-circle-container" class="relative w-64 h-64 md:w-72 md:h-72 flex items-center justify-center">
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                    <!-- Trilha de fundo do círculo -->
+                    <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="12" />
+                    <!-- Anel de progresso -->
+                    <circle id="progress-ring" cx="60" cy="60" r="54" fill="none" stroke="url(#progress-gradient)" stroke-width="12" stroke-linecap="round" style="transition: stroke-dashoffset 0.5s ease-out;"></circle>
+                    <!-- Gradiente para o anel de progresso -->
+                    <defs>
+                        <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <!-- Texto dentro do círculo -->
+                <div id="progress-text" class="absolute flex flex-col items-center justify-center text-center">
+                    <span id="current-water-display" class="text-5xl font-bold">0</span>
+                    <span class="text-lg opacity-80">ml</span>
+                    <span id="percentage-display" class="text-sm font-medium opacity-60 mt-1">0% da meta</span>
                 </div>
             </div>
-            <h2 class="text-xl font-bold">Mantenha o foco na sua meta!</h2>
-            <p class="text-sm opacity-70 max-w-xs mt-2">A hidratação é essencial para o seu bem-estar e energia.</p>
         </div>
         
         <div id="add-water-modal" class="modal-container modal-overlay">
@@ -151,9 +174,9 @@
                     </button>
                 </div>
                 <div class="grid grid-cols-3 gap-4 w-full mb-6">
-                    <button class="btn-glass rounded-xl p-4 text-center text-lg hover:bg-white/20 transition-colors add-shortcut-btn" data-amount="150">150ml</button>
-                    <button class="btn-glass rounded-xl p-4 text-center text-lg hover:bg-white/20 transition-colors add-shortcut-btn" data-amount="250">250ml</button>
-                    <button class="btn-glass rounded-xl p-4 text-center text-lg hover:bg-white/20 transition-colors add-shortcut-btn" data-amount="500">500ml</button>
+                    <button class="btn-glass rounded-xl p-4 text-center text-lg font-medium hover:bg-white/20 transition-colors add-shortcut-btn" data-amount="150">150ml</button>
+                    <button class="btn-glass rounded-xl p-4 text-center text-lg font-medium hover:bg-white/20 transition-colors add-shortcut-btn" data-amount="250">250ml</button>
+                    <button class="btn-glass rounded-xl p-4 text-center text-lg font-medium hover:bg-white/20 transition-colors add-shortcut-btn" data-amount="500">500ml</button>
                 </div>
                 <div class="w-full mb-6">
                     <input id="custom-amount-input" type="number" placeholder="Ou digite um valor (ml)" class="input-glass w-full rounded-xl px-4 py-3 text-white placeholder-white/70 focus:outline-none bg-transparent" />
@@ -270,10 +293,8 @@
                     <div class="glass-card">
                         <h3 class="text-lg font-bold mb-3">Notificações</h3>
                         <p class="text-sm opacity-70 mb-3">Receba lembretes de hidratação.</p>
-                        <!-- Nova seção para lidar com a diferença entre iOS e outros navegadores -->
                         <div id="notification-options">
-                            <!-- Este conteúdo será gerado dinamicamente via JS -->
-                        </div>
+                            </div>
                     </div>
                 </div>
             </div>
@@ -287,8 +308,8 @@
             <button id="stats-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20 btn-glass" aria-label="Abrir Dashboard">
                 <i data-lucide="layout-dashboard" class="w-7 h-7"></i>
             </button>
-            <button id="add-water-nav-btn" class="w-20 h-20 rounded-full bg-white text-blue-500 text-5xl font-light flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300" aria-label="Adicionar água">
-                +
+            <button id="add-water-nav-btn" class="w-20 h-20 rounded-full btn-glass text-white text-5xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300" aria-label="Adicionar água">
+                <i data-lucide="plus" class="w-7 h-7 text-white"></i>
             </button>
             <button id="settings-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20 btn-glass" aria-label="Abrir configurações">
                 <i data-lucide="settings" class="w-7 h-7"></i>
@@ -318,6 +339,7 @@
         let audioContextStarted = false;
         let notificationIntervalId = null;
 
+        // --- Estado do Aplicativo ---
         let state = {
             currentWater: parseInt(localStorage.getItem('currentWater')) || 0,
             goalWater: parseInt(localStorage.getItem('goalWater')) || 2500,
@@ -333,14 +355,16 @@
             lastStreakDate: localStorage.getItem('lastStreakDate') || null,
         };
 
+        // --- Referências de Elementos DOM ---
         const modals = {
             add: document.getElementById('add-water-modal'),
             stats: document.getElementById('stats-modal'),
             settings: document.getElementById('settings-modal')
         };
-        const waterDisplay = {
-            current: document.getElementById('current-water-display'),
-            goal: document.getElementById('goal-water-display')
+        const progressDisplay = {
+            circle: null,
+            current: null,
+            percentage: null,
         };
         const navButtons = {
             stats: document.getElementById('stats-nav-btn'),
@@ -352,13 +376,10 @@
             el: document.getElementById('feedback-toast'),
             message: document.getElementById('toast-message')
         };
-
         let charts = {
-            progress: null,
             stats: null,
             distribution: null
         };
-        
         const settings = {
             manualGoalInput: null,
             saveManualBtn: null,
@@ -378,6 +399,7 @@
             average: null,
         };
 
+        // --- Funções de Persistência ---
         const saveState = () => {
             localStorage.setItem('currentWater', state.currentWater);
             localStorage.setItem('goalWater', state.goalWater);
@@ -390,9 +412,30 @@
             localStorage.setItem('lastStreakDate', state.lastStreakDate);
         };
 
+        // --- Funções de UI ---
+        const updateProgressCircle = () => {
+            if (!progressDisplay.circle || !progressDisplay.current || !progressDisplay.percentage) return;
+
+            const radius = progressDisplay.circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            progressDisplay.circle.style.strokeDasharray = `${circumference} ${circumference}`;
+
+            let progress = state.currentWater / state.goalWater;
+            if (isNaN(progress) || !isFinite(progress)) progress = 0;
+            
+            // Limita o progresso visual a 100% para o anel não ultrapassar
+            const visualProgress = Math.min(progress, 1);
+            const offset = circumference - visualProgress * circumference;
+            progressDisplay.circle.style.strokeDashoffset = offset;
+
+            progressDisplay.current.textContent = state.currentWater;
+            
+            const percentage = Math.floor(progress * 100);
+            progressDisplay.percentage.textContent = `${isNaN(percentage) ? 0 : percentage}% da meta`;
+        };
+
         const updateUI = () => {
-            waterDisplay.current.textContent = state.currentWater;
-            waterDisplay.goal.textContent = `/ ${state.goalWater} ml`;
+            updateProgressCircle();
 
             if (settings.manualGoalInput) {
                 settings.manualGoalInput.value = state.goalWater;
@@ -401,7 +444,6 @@
                 settings.weightInput.value = state.userWeight;
             }
             
-            // Lógica de renderização das opções de notificação
             if (settings.notificationOptions) {
                 if (isIOS()) {
                     settings.notificationOptions.innerHTML = `
@@ -440,20 +482,6 @@
                 }
             }
             lucide.createIcons();
-
-            if (charts.progress) {
-                charts.progress.data = {
-                    datasets: [{
-                        data: [state.currentWater, Math.max(0, state.goalWater - state.currentWater)],
-                        backgroundColor: ['#ffffff', 'rgba(255, 255, 255, 0.1)'],
-                        borderWidth: 0,
-                        borderRadius: 20,
-                        hoverOffset: 10
-                    }]
-                };
-                charts.progress.options = { responsive: true, cutout: '80%', plugins: { legend: { display: false }, tooltip: { enabled: false } } };
-                charts.progress.update();
-            }
 
             if (charts.stats) {
                 charts.stats.data = {
@@ -519,7 +547,6 @@
                 settings.temperatureGoalDisplay.classList.add('hidden');
             }
             
-            // Atualiza o contador de streaks e a média
             if (statsDisplay.average && statsDisplay.streak) {
                 const dailyAverage = state.waterHistory.reduce((sum, current) => sum + current, 0) / state.waterHistory.length;
                 statsDisplay.average.textContent = Math.round(dailyAverage);
@@ -536,7 +563,6 @@
                         icon: 'https://placehold.co/100x100/ffffff/000000?text=💧'
                     });
                 };
-                // Envia uma notificação inicial e depois a cada 30 minutos (1800000 ms)
                 sendNotification();
                 notificationIntervalId = setInterval(sendNotification, 1800000);
             }
@@ -553,13 +579,11 @@
             startAudioContext();
             
             if (state.notificationsEnabled) {
-                // Desativar notificações
                 cancelNotifications();
                 state.notificationsEnabled = false;
                 saveState();
                 showToast('Notificações desativadas.', false);
             } else {
-                // Ativar notificações
                 if (!('Notification' in window)) {
                     showToast('Este navegador não suporta notificações.', true);
                     return;
@@ -584,28 +608,13 @@
             updateUI();
         }
 
-        // --- Funções de Notificação do iOS ---
         const createiOSCalendarEvent = () => {
             const startDate = new Date();
-            const endDate = new Date(startDate.getTime() + 30 * 60000); // Lembrete a cada 30 minutos
+            const endDate = new Date(startDate.getTime() + 30 * 60000);
             
-            const formatForICS = (date) => {
-                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-            };
+            const formatForICS = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
             
-            const eventData = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//AquaFlow//Lembrete de Hidratação//PT-BR
-BEGIN:VEVENT
-UID:${Date.now()}@aquaflow.app
-DTSTAMP:${formatForICS(new Date())}
-DTSTART:${formatForICS(startDate)}
-DTEND:${formatForICS(endDate)}
-SUMMARY:💧 Hora de beber água!
-DESCRIPTION:Lembrete de hidratação. Mantenha-se hidratado para atingir sua meta diária.
-URL:${window.location.href}
-END:VEVENT
-END:VCALENDAR`;
+            const eventData = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//AquaFlow//Lembrete de Hidratação//PT-BR\nBEGIN:VEVENT\nUID:${Date.now()}@aquaflow.app\nDTSTAMP:${formatForICS(new Date())}\nDTSTART:${formatForICS(startDate)}\nDTEND:${formatForICS(endDate)}\nSUMMARY:💧 Hora de beber água!\nDESCRIPTION:Lembrete de hidratação. Mantenha-se hidratado para atingir sua meta diária.\nURL:${window.location.href}\nEND:VEVENT\nEND:VCALENDAR`;
 
             const blob = new Blob([eventData], { type: 'text/calendar' });
             const url = URL.createObjectURL(blob);
@@ -623,17 +632,11 @@ END:VCALENDAR`;
         const showModal = (modalId) => {
             startAudioContext();
             playChime();
-            Object.values(modals).forEach(modal => {
-                modal.classList.remove('is-visible');
-            });
+            Object.values(modals).forEach(modal => modal.classList.remove('is-visible'));
             const modalEl = modals[modalId];
-            if (modalEl) {
-                modalEl.classList.add('is-visible');
-            }
-            if (modalId === 'stats') {
-                if (!charts.distribution) {
-                    charts.distribution = new Chart(document.getElementById('distribution-chart').getContext('2d'), { type: 'doughnut' });
-                }
+            if (modalEl) modalEl.classList.add('is-visible');
+            if (modalId === 'stats' && !charts.distribution) {
+                charts.distribution = new Chart(document.getElementById('distribution-chart').getContext('2d'), { type: 'doughnut' });
                 updateUI();
             }
         };
@@ -641,19 +644,16 @@ END:VCALENDAR`;
         const closeModal = (modalId) => {
             playChime();
             const modalEl = modals[modalId];
-            if (modalEl) {
-                modalEl.classList.remove('is-visible');
-            }
+            if (modalEl) modalEl.classList.remove('is-visible');
         };
 
         const showToast = (message, isError = false) => {
             playChime();
             toast.message.textContent = message;
-            toast.el.classList.remove('bg-green-500', 'bg-red-500');
-            toast.el.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
-            toast.el.classList.remove('hidden');
+            toast.el.className = `fixed bottom-24 left-1/2 -translate-x-1/2 z-30 p-4 rounded-xl shadow-lg transition-all duration-300 transform text-white ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            toast.el.classList.remove('scale-90', 'opacity-0');
             setTimeout(() => {
-                toast.el.classList.remove('scale-90', 'opacity-0');
+                toast.el.classList.remove('hidden');
                 toast.el.classList.add('scale-100', 'opacity-100');
             }, 10);
 
@@ -664,6 +664,7 @@ END:VCALENDAR`;
             }, 3000);
         };
 
+        // --- Lógica Principal do Aplicativo ---
         const handleDailyReset = () => {
             const today = new Date().toDateString();
             const yesterday = new Date();
@@ -673,7 +674,7 @@ END:VCALENDAR`;
             if (today !== state.lastUpdateDate) {
                 if (state.lastUpdateDate === yesterdayString && state.currentWater >= state.goalWater) {
                     state.streakCount++;
-                } else {
+                } else if (state.lastUpdateDate !== today) {
                     state.streakCount = 0;
                 }
                 state.waterHistory.shift();
@@ -691,7 +692,7 @@ END:VCALENDAR`;
             state.currentWater += amount;
             state.waterHistory[state.waterHistory.length - 1] += amount;
             
-            if (state.shortcutHistory[amount]) {
+            if (state.shortcutHistory.hasOwnProperty(amount)) {
                 state.shortcutHistory[amount] += amount;
             }
 
@@ -711,7 +712,7 @@ END:VCALENDAR`;
             lucide.createIcons();
 
             if (!navigator.geolocation) {
-                handleLocationError('Geolocation não é suportado pelo seu navegador.');
+                handleLocationError('Geolocalização não é suportada pelo seu navegador.');
                 return;
             }
 
@@ -724,22 +725,17 @@ END:VCALENDAR`;
                     state.currentTemperature = simulatedTemp;
                     
                     let newRecommendedGoal = state.goalWater;
-                    if (simulatedTemp >= 30) {
-                        newRecommendedGoal = Math.floor(state.goalWater * 1.3);
-                    } else if (simulatedTemp >= 25) {
-                        newRecommendedGoal = Math.floor(state.goalWater * 1.1);
-                    } else {
-                        newRecommendedGoal = state.goalWater;
-                    }
+                    if (simulatedTemp >= 30) newRecommendedGoal = Math.floor(state.goalWater * 1.3);
+                    else if (simulatedTemp >= 25) newRecommendedGoal = Math.floor(state.goalWater * 1.1);
+                    else newRecommendedGoal = state.goalWater;
+                    
                     state.recommendedGoalByTemperature = newRecommendedGoal;
                     
                     refreshIcon.classList.remove('animate-spin');
                     settings.refreshTempBtn.disabled = false;
                     updateUI();
                 },
-                (error) => {
-                    handleLocationError('Não foi possível obter a sua localização.');
-                }
+                (error) => handleLocationError('Não foi possível obter a sua localização.')
             );
         };
         
@@ -754,18 +750,11 @@ END:VCALENDAR`;
         }
 
         const calculateGoalByWeight = () => {
-            if (state.userWeight > 0) {
-                state.recommendedGoalByWeight = Math.floor(state.userWeight * 35);
-            } else {
-                state.recommendedGoalByWeight = null;
-            }
+            state.recommendedGoalByWeight = (state.userWeight > 0) ? Math.floor(state.userWeight * 35) : null;
             updateUI();
         };
 
-        const isIOS = () => {
-            const userAgent = window.navigator.userAgent.toLowerCase();
-            return /iphone|ipad|ipod/.test(userAgent);
-        }
+        const isIOS = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
 
         // --- Event Listeners ---
         const setupEventListeners = () => {
@@ -773,19 +762,12 @@ END:VCALENDAR`;
             navButtons.stats.addEventListener('click', () => showModal('stats'));
             navButtons.settings.addEventListener('click', () => showModal('settings'));
             
-            modals.add.addEventListener('click', (e) => {
-                if (e.target === modals.add) closeModal('add');
+            Object.keys(modals).forEach(key => {
+                modals[key].addEventListener('click', (e) => {
+                    if (e.target === modals[key]) closeModal(key);
+                });
+                modals[key].querySelector(`#close-${key}-modal-btn`).addEventListener('click', () => closeModal(key));
             });
-            modals.stats.addEventListener('click', (e) => {
-                if (e.target === modals.stats) closeModal('stats');
-            });
-            modals.settings.addEventListener('click', (e) => {
-                if (e.target === modals.settings) closeModal('settings');
-            });
-            
-            modals.add.querySelector('#close-add-modal-btn').addEventListener('click', () => closeModal('add'));
-            modals.stats.querySelector('#close-stats-modal-btn').addEventListener('click', () => closeModal('stats'));
-            modals.settings.querySelector('#close-settings-modal-btn').addEventListener('click', () => closeModal('settings'));
 
             modals.add.querySelectorAll('.add-shortcut-btn').forEach(btn => {
                 btn.addEventListener('click', () => addWater(parseInt(btn.dataset.amount)));
@@ -851,23 +833,28 @@ END:VCALENDAR`;
             settings.temperatureDisplay = modals.settings.querySelector('#temperature-display');
             settings.temperatureGoalDisplay = modals.settings.querySelector('#temperature-goal-display');
             settings.temperatureGoalValue = modals.settings.querySelector('#temperature-goal-value');
-            settings.applyTempBtn = modals.settings.querySelector('#apply-temp-goal-btn');
+            settings.applyTempBtn = modals.settings.querySelector('#apply-temp-btn');
             settings.refreshTempBtn = modals.settings.querySelector('#refresh-temp-btn');
             settings.notificationOptions = modals.settings.querySelector('#notification-options');
 
             statsDisplay.streak = modals.stats.querySelector('#streak-count');
             statsDisplay.average = modals.stats.querySelector('#average-daily');
+            
+            // Inicializa os elementos do círculo de progresso
+            progressDisplay.circle = document.getElementById('progress-ring');
+            progressDisplay.current = document.getElementById('current-water-display');
+            progressDisplay.percentage = document.getElementById('percentage-display');
 
-            // Inicializa os gráficos após o DOM estar pronto
-            charts.progress = new Chart(document.getElementById('progress-chart').getContext('2d'), { type: 'doughnut' });
-            charts.stats = new Chart(document.getElementById('stats-chart').getContext('2d'), { type: 'bar' });
+            // Inicializa o gráfico de estatísticas
+            if (document.getElementById('stats-chart')) {
+                charts.stats = new Chart(document.getElementById('stats-chart').getContext('2d'), { type: 'bar' });
+            }
 
             handleDailyReset();
             updateUI();
             calculateGoalByWeight();
             setupEventListeners();
             
-            // Verifica o estado das notificações na inicialização
             if (!isIOS() && state.notificationsEnabled) {
                 scheduleNotification();
             }
