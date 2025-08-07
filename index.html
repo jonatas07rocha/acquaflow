@@ -127,8 +127,8 @@
         }
     </style>
 </head>
-<!-- O background agora usa a imagem fornecida, cobrindo toda a tela. -->
-<body class="font-sans h-screen overflow-hidden flex items-center justify-center p-4 text-white" style="background-image: url('https://img.freepik.com/fotos-premium/3d-monocromatico-rendem-o-fundo-abstrato-do-fluxo-de-vidro-moderno-formas-liquidas-esferas-de-vidro_363039-1825.jpg'); background-size: cover; background-position: center;">
+<!-- FIX: Removida a classe 'font-sans' do Tailwind para permitir que a fonte 'Nunito' seja aplicada corretamente. -->
+<body class="h-screen overflow-hidden flex items-center justify-center p-4 text-white" style="background-image: url('https://img.freepik.com/fotos-premium/3d-monocromatico-rendem-o-fundo-abstrato-do-fluxo-de-vidro-moderno-formas-liquidas-esferas-de-vidro_363039-1825.jpg'); background-size: cover; background-position: center;">
 
     <div class="w-full h-full flex flex-col items-center justify-between md:w-full md:max-w-sm md:h-[90vh] md:max-h-[800px] md:bg-gray-900/60 md:rounded-[40px] md:shadow-2xl md:overflow-hidden md:relative md:p-6 md:sm:p-8">
 
@@ -849,12 +849,10 @@
             settings.weightInput = modals.settings.querySelector('#weight-input');
             settings.weightGoalDisplay = modals.settings.querySelector('#weight-goal-display');
             settings.weightGoalValue = modals.settings.querySelector('#weight-goal-value');
-            // FIX: Corrected the selector ID from #apply-weight-btn to #apply-weight-goal-btn
             settings.applyWeightBtn = modals.settings.querySelector('#apply-weight-goal-btn');
             settings.temperatureDisplay = modals.settings.querySelector('#temperature-display');
             settings.temperatureGoalDisplay = modals.settings.querySelector('#temperature-goal-display');
             settings.temperatureGoalValue = modals.settings.querySelector('#temperature-goal-value');
-            // FIX: Corrected the selector ID from #apply-temp-btn to #apply-temp-goal-btn
             settings.applyTempBtn = modals.settings.querySelector('#apply-temp-goal-btn');
             settings.refreshTempBtn = modals.settings.querySelector('#refresh-temp-btn');
             settings.notificationOptions = modals.settings.querySelector('#notification-options');
