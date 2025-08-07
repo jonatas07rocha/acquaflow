@@ -1,626 +1,500 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AquaFlow - Seu Aplicativo de Hidratação</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <style>
-    /* Estilos globais para a transição de elementos com o Tailwind */
-    body {
-      transition: all 0.3s ease-in-out;
-    }
-    /* Classe para animação de rotação */
-    .animate-spin {
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaFlow - Seu Aplicativo de Hidratação</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .page-transition {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+    </style>
 </head>
-<body>
-  <div id="root"></div>
+<body class="font-sans bg-gradient-to-br from-cyan-400 to-blue-600 h-screen overflow-hidden flex items-center justify-center p-4 text-white">
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
-    const { Home, BarChart3, Settings, Save, RefreshCcw, X, Thermometer, Ruler } = lucide;
+    <div id="app-container" class="w-full max-w-sm h-[90vh] max-h-[800px] glass-effect rounded-[40px] shadow-2xl overflow-hidden relative flex flex-col p-6">
 
-    // Hook customizado para persistir o estado no localStorage
-    const useLocalStorage = (key, initialValue) => {
-      const [storedValue, setStoredValue] = useState(() => {
-        try {
-          const item = window.localStorage.getItem(key);
-          return item ? JSON.parse(item) : initialValue;
-        } catch (error) {
-          console.error(error);
-          return initialValue;
-        }
-      });
-
-      useEffect(() => {
-        try {
-          window.localStorage.setItem(key, JSON.stringify(storedValue));
-        } catch (error) {
-          console.error(error);
-        }
-      }, [key, storedValue]);
-
-      return [storedValue, setStoredValue];
-    };
-
-    // Componente principal da aplicação
-    const App = () => {
-      const [currentWater, setCurrentWater] = useLocalStorage('currentWater', 0);
-      const [goalWater, setGoalWater] = useLocalStorage('goalWater', 2500);
-      const [waterHistory, setWaterHistory] = useLocalStorage('waterHistory', [0, 0, 0, 0, 0, 0, 0]);
-      const [lastUpdateDate, setLastUpdateDate] = useLocalStorage('lastUpdateDate', new Date().toDateString());
-
-      const [currentPage, setCurrentPage] = useState('home');
-      const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-      const [feedbackModal, setFeedbackModal] = useState({ isOpen: false, message: '', isError: false });
-      const motivationalMilestoneRef = useRef(0);
-
-      const [currentTemperature, setCurrentTemperature] = useState(null);
-      const [recommendedGoalByTemperature, setRecommendedGoalByTemperature] = useState(null);
-      const [isLoadingTemperature, setIsLoadingTemperature] = useState(false);
-
-      const [userWeight, setUserWeight] = useLocalStorage('userWeight', 70);
-      const [recommendedGoalByWeight, setRecommendedGoalByWeight] = useState(null);
-
-      useEffect(() => {
-        const today = new Date().toDateString();
-        if (today !== lastUpdateDate) {
-          setWaterHistory(prevHistory => [...prevHistory.slice(1), 0]);
-          setCurrentWater(0);
-          setLastUpdateDate(today);
-          showFeedbackModal('Um novo dia começou! Seu contador foi zerado.', false);
-          motivationalMilestoneRef.current = 0;
-        }
-      }, [lastUpdateDate]);
-
-      useEffect(() => {
-        const percentage = (currentWater / goalWater) * 100;
-        const currentMilestone = motivationalMilestoneRef.current;
-
-        if (percentage >= 100 && currentMilestone < 100) {
-          showFeedbackModal("Meta atingida! Parabéns! 🏆");
-          motivationalMilestoneRef.current = 100;
-        } else if (percentage >= 75 && currentMilestone < 75) {
-          showFeedbackModal("Você está quase lá, continue!");
-          motivationalMilestoneRef.current = 75;
-        } else if (percentage >= 50 && currentMilestone < 50) {
-          showFeedbackModal("Você está na metade! 🎉");
-          motivationalMilestoneRef.current = 50;
-        } else if (percentage > 0 && currentMilestone === 0) {
-          showFeedbackModal("Ótimo começo de dia!");
-          motivationalMilestoneRef.current = 1;
-        }
-      }, [currentWater, goalWater]);
-
-      const fetchTemperatureAndRecommendGoal = async () => {
-        setIsLoadingTemperature(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const simulatedTemp = 20 + Math.floor(Math.random() * 15);
-        setCurrentTemperature(simulatedTemp);
-
-        let newRecommendedGoal = goalWater;
-        if (simulatedTemp >= 30) {
-          newRecommendedGoal = Math.floor(goalWater * 1.3);
-        } else if (simulatedTemp >= 25) {
-          newRecommendedGoal = Math.floor(goalWater * 1.1);
-        } else {
-          newRecommendedGoal = goalWater;
-        }
-        setRecommendedGoalByTemperature(newRecommendedGoal);
-        setIsLoadingTemperature(false);
-      };
-      
-      useEffect(() => {
-        if(currentPage === 'settings') {
-          fetchTemperatureAndRecommendGoal();
-        }
-      }, [currentPage]);
-
-      useEffect(() => {
-        if (userWeight > 0) {
-          setRecommendedGoalByWeight(Math.floor(userWeight * 35));
-        } else {
-          setRecommendedGoalByWeight(null);
-        }
-      }, [userWeight]);
-
-      const handleAddWater = (amount) => {
-        if (isNaN(amount) || amount <= 0) return;
-        const newCurrentWater = currentWater + amount;
-        
-        const newWaterHistory = [...waterHistory];
-        newWaterHistory[newWaterHistory.length - 1] += amount;
-
-        setCurrentWater(newCurrentWater);
-        setWaterHistory(newWaterHistory);
-        setIsAddModalOpen(false);
-      };
-
-      const handleApplyRecommendedGoal = (goal) => {
-        if (goal) {
-          setGoalWater(goal);
-          showFeedbackModal(`Meta atualizada para ${goal} ml!`);
-        }
-      };
-
-      const showFeedbackModal = (message, isError = false) => {
-        setFeedbackModal({ isOpen: true, message, isError });
-        setTimeout(() => {
-          setFeedbackModal({ isOpen: false, message: '', isError: false });
-        }, 3000);
-      };
-
-      const renderPage = () => {
-        switch (currentPage) {
-          case 'stats':
-            return (
-              <StatsPage
-                waterHistory={waterHistory}
-                goalWater={goalWater}
-                onClose={() => setCurrentPage('home')}
-              />
-            );
-          case 'settings':
-            return (
-              <SettingsPage
-                goalWater={goalWater}
-                setGoalWater={setGoalWater}
-                onResetWater={() => {
-                    setCurrentWater(0);
-                    showFeedbackModal('Contador de água zerado!');
-                }}
-                showFeedbackModal={showFeedbackModal}
-                onClose={() => setCurrentPage('home')}
-                currentTemperature={currentTemperature}
-                recommendedGoalByTemperature={recommendedGoalByTemperature}
-                isLoadingTemperature={isLoadingTemperature}
-                onFetchTemperature={fetchTemperatureAndRecommendGoal}
-                onApplyRecommendedGoal={handleApplyRecommendedGoal}
-                userWeight={userWeight}
-                setUserWeight={setUserWeight}
-                recommendedGoalByWeight={recommendedGoalByWeight}
-              />
-            );
-          case 'home':
-          default:
-            return (
-              <HomePage
-                currentWater={currentWater}
-                goalWater={goalWater}
-              />
-            );
-        }
-      };
-
-      return (
-        <div className="font-sans bg-gradient-to-br from-cyan-400 to-blue-600 min-h-screen flex items-center justify-center p-4 text-white">
-          <div className="w-full max-w-sm h-[90vh] max-h-[800px] bg-white/10 backdrop-blur-xl rounded-[40px] shadow-2xl overflow-hidden relative flex flex-col border border-white/20 p-6">
-            {renderPage()}
-            <BottomNav
-              currentPage={currentPage}
-              onNavigate={setCurrentPage}
-              onOpenAddWater={() => setIsAddModalOpen(true)}
-            />
-          </div>
-
-          <AddWaterModal
-            isOpen={isAddModalOpen}
-            onClose={() => setIsAddModalOpen(false)}
-            onAddWater={handleAddWater}
-          />
-
-          <FeedbackModal
-            isOpen={feedbackModal.isOpen}
-            message={feedbackModal.message}
-            isError={feedbackModal.isError}
-          />
-        </div>
-      );
-    };
-
-    const Header = ({ pageTitle }) => {
-      const titles = {
-        home: 'AquaFlow',
-        stats: 'Estatísticas',
-        settings: 'Configurações'
-      };
-      return (
-        <header className="flex justify-between items-center text-white z-10">
-          <div>
-            <h1 className="font-bold text-2xl capitalize">{titles[pageTitle] || 'AquaFlow'}</h1>
-            <p className="text-sm opacity-80">Olá! Mantenha-se hidratado.</p>
-          </div>
+        <header id="header" class="flex justify-between items-center text-white z-10 mb-8">
+            <div>
+                <h1 id="page-title" class="font-bold text-2xl capitalize">AquaFlow</h1>
+                <p class="text-sm opacity-80">Olá! Mantenha-se hidratado.</p>
+            </div>
         </header>
-      );
-    };
 
-    const HomePage = ({ currentWater, goalWater }) => {
-      return (
-        <>
-          <Header pageTitle="home" />
-          <main className="flex-1 flex flex-col items-center justify-center text-center -mt-16">
-            <ProgressChart currentWater={currentWater} goalWater={goalWater} />
-            <p className="mt-8 text-lg font-bold">Mantenha o foco na sua meta!</p>
-            <p className="text-sm opacity-80 max-w-xs mt-2">A hidratação é essencial para o seu bem-estar e energia.</p>
-          </main>
-        </>
-      );
-    };
-
-    const StatsPage = ({ waterHistory, goalWater, onClose }) => {
-      const chartRef = useRef(null);
-      const chartInstanceRef = useRef(null);
-      const daysOfWeek = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Hoje'];
-      const closeButtonRef = useRef(null);
-
-      useEffect(() => {
-        if (closeButtonRef.current) {
-            closeButtonRef.current.focus();
-        }
-      }, []);
-
-      useEffect(() => {
-        if (chartRef.current) {
-          if (chartInstanceRef.current) {
-            chartInstanceRef.current.destroy();
-          }
-          const ctx = chartRef.current.getContext('2d');
-          chartInstanceRef.current = new Chart(ctx, {
-            type: 'bar',
-            data: {
-              labels: daysOfWeek,
-              datasets: [{
-                label: 'Consumo (ml)',
-                data: waterHistory,
-                backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                borderColor: 'rgba(255, 255, 255, 0.8)',
-                borderWidth: 1,
-                borderRadius: 8,
-              }, {
-                label: 'Meta',
-                data: Array(7).fill(goalWater),
-                type: 'line',
-                borderColor: '#ffffff',
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: false,
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { display: false },
-              },
-              scales: {
-                x: {
-                  grid: { display: false },
-                  ticks: { color: 'white' }
-                },
-                y: {
-                  beginAtZero: true,
-                  grid: { color: 'rgba(255, 255, 255, 0.2)' },
-                  ticks: { color: 'white' }
-                }
-              }
-            }
-          });
-        }
-        return () => {
-          if (chartInstanceRef.current) {
-            chartInstanceRef.current.destroy();
-          }
-        };
-      }, [waterHistory, goalWater]);
-
-      return (
-        <div className="absolute inset-0 w-full h-full flex flex-col items-center">
-          <div className="flex justify-between items-center w-full mb-6">
-            <h2 className="text-2xl font-bold">Estatísticas</h2>
-            <button onClick={onClose} ref={closeButtonRef} className="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Fechar Estatísticas">
-              <X size={24} />
-            </button>
-          </div>
-          <div className="w-full h-64 p-4 rounded-2xl">
-            <canvas ref={chartRef}></canvas>
-          </div>
-          <p className="opacity-80 mt-4 text-sm">Histórico de consumo dos últimos 7 dias.</p>
-        </div>
-      );
-    };
-
-    const SettingsPage = ({ goalWater, setGoalWater, onResetWater, showFeedbackModal, onClose, currentTemperature, recommendedGoalByTemperature, isLoadingTemperature, onFetchTemperature, onApplyRecommendedGoal, userWeight, setUserWeight, recommendedGoalByWeight }) => {
-      const [newGoal, setNewGoal] = useState(goalWater);
-      const closeButtonRef = useRef(null);
-
-      useEffect(() => {
-        if (closeButtonRef.current) {
-          closeButtonRef.current.focus();
-        }
-      }, []);
-
-      const handleSaveGoal = () => {
-        const parsedGoal = parseInt(newGoal, 10);
-        if (!isNaN(parsedGoal) && parsedGoal > 0) {
-          setGoalWater(parsedGoal);
-          showFeedbackModal('Meta salva com sucesso!');
-        } else {
-          showFeedbackModal('Por favor, insira um valor válido para a meta.', true);
-        }
-      };
-
-      return (
-        <div className="absolute inset-0 w-full h-full flex flex-col">
-          <div className="flex justify-between items-center w-full mb-8">
-            <h2 className="text-2xl font-bold">Configurações</h2>
-            <button onClick={onClose} ref={closeButtonRef} className="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Fechar Configurações">
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-6 w-full">
-            <div>
-              <h3 className="text-lg font-bold mb-3">Ajuste da Meta Diária</h3>
-              <div className="flex flex-col items-start w-full">
-                <label htmlFor="goal" className="text-sm opacity-80 mb-1">Meta diária (ml)</label>
-                <input
-                  id="goal"
-                  type="number"
-                  value={newGoal}
-                  onChange={(e) => setNewGoal(e.target.value)}
-                  className="w-full bg-white/20 rounded-xl px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
-                />
-              </div>
-              <button
-                onClick={handleSaveGoal}
-                className="flex items-center justify-center gap-2 p-3 rounded-xl bg-white text-blue-500 font-bold hover:bg-gray-200 transition-colors mt-4 w-full"
-                aria-label="Salvar meta"
-              >
-                <Save size={20} />
-                <span>Salvar Meta</span>
-              </button>
-            </div>
+        <div id="pages-container" class="flex-1 overflow-y-auto relative">
             
-            <div>
-              <h3 className="text-lg font-bold mb-3">Meta por Peso</h3>
-              <div className="flex flex-col gap-2 w-full">
-                <div className="flex items-center justify-between w-full">
-                  <label htmlFor="weight" className="text-sm opacity-80 mb-1 flex items-center gap-2">
-                    <Ruler size={16} />
-                    Peso (kg)
-                  </label>
-                  <input
-                    id="weight"
-                    type="number"
-                    value={userWeight}
-                    onChange={(e) => setUserWeight(parseInt(e.target.value) || 0)}
-                    className="w-20 bg-white/20 rounded-xl px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 text-right"
-                  />
+            <div id="home-page" class="absolute inset-0 flex flex-col items-center justify-center text-center page-transition">
+                <div class="relative w-64 h-64">
+                    <canvas id="progress-chart"></canvas>
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white">
+                        <span id="current-water-display" class="text-5xl font-bold">0</span>
+                        <span id="goal-water-display" class="text-lg opacity-80">/ 2500 ml</span>
+                    </div>
                 </div>
-                {recommendedGoalByWeight && (
-                  <div className="flex items-center justify-between w-full p-3 rounded-xl bg-white/20">
-                    <span className="text-sm">Meta Recomendada: <span className="font-bold">{recommendedGoalByWeight} ml</span></span>
-                    <button
-                      onClick={() => onApplyRecommendedGoal(recommendedGoalByWeight)}
-                      className="p-1 rounded-full bg-white text-blue-500 hover:bg-gray-200 transition-colors"
-                      aria-label="Aplicar meta recomendada"
-                    >
-                      <Save size={16} />
+                <p class="mt-8 text-lg font-bold">Mantenha o foco na sua meta!</p>
+                <p class="text-sm opacity-80 max-w-xs mt-2">A hidratação é essencial para o seu bem-estar e energia.</p>
+            </div>
+
+            <div id="stats-page" class="absolute inset-0 flex flex-col items-center opacity-0 -translate-x-full page-transition hidden">
+                <div class="flex justify-between items-center w-full mb-6">
+                    <h2 class="text-2xl font-bold">Estatísticas</h2>
+                    <button id="close-stats-btn" class="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Fechar Estatísticas">
+                        <i data-lucide="x" class="w-6 h-6"></i>
                     </button>
-                  </div>
-                )}
-              </div>
+                </div>
+                <div class="w-full h-64 p-4 rounded-2xl">
+                    <canvas id="stats-chart"></canvas>
+                </div>
+                <p class="opacity-80 mt-4 text-sm">Histórico de consumo dos últimos 7 dias.</p>
             </div>
 
-            <div>
-              <h3 className="text-lg font-bold mb-3">Meta por Temperatura</h3>
-              <div className="flex flex-col gap-2 w-full">
-                <p className="flex items-center gap-2 text-sm opacity-80">
-                  <Thermometer size={16} />
-                  {currentTemperature ? `Temperatura atual: ${currentTemperature}°C` : 'Buscando temperatura...'}
-                </p>
-                {recommendedGoalByTemperature && (
-                  <div className="flex items-center justify-between w-full p-3 rounded-xl bg-white/20">
-                    <span className="text-sm">Meta Recomendada: <span className="font-bold">{recommendedGoalByTemperature} ml</span></span>
-                    <button
-                      onClick={() => onApplyRecommendedGoal(recommendedGoalByTemperature)}
-                      className="p-1 rounded-full bg-white text-blue-500 hover:bg-gray-200 transition-colors"
-                      aria-label="Aplicar meta recomendada"
-                    >
-                      <Save size={16} />
+            <div id="settings-page" class="absolute inset-0 flex flex-col opacity-0 -translate-x-full page-transition hidden">
+                <div class="flex justify-between items-center w-full mb-8">
+                    <h2 class="text-2xl font-bold">Configurações</h2>
+                    <button id="close-settings-btn" class="p-2 rounded-full hover:bg-white/20 transition-colors" aria-label="Fechar Configurações">
+                        <i data-lucide="x" class="w-6 h-6"></i>
                     </button>
-                  </div>
-                )}
-                <button
-                  onClick={onFetchTemperature}
-                  disabled={isLoadingTemperature}
-                  className="flex items-center justify-center gap-2 p-3 rounded-xl bg-white/20 hover:bg-white/30 transition-colors w-full"
-                  aria-label="Buscar temperatura e meta"
-                >
-                  <RefreshCcw size={20} className={isLoadingTemperature ? "animate-spin" : ""}/>
-                  <span>{isLoadingTemperature ? 'Buscando...' : 'Atualizar Meta'}</span>
-                </button>
-              </div>
+                </div>
+                <div class="flex flex-col gap-6 w-full">
+                    <div>
+                        <h3 class="text-lg font-bold mb-3">Ajuste da Meta Diária</h3>
+                        <div class="flex flex-col items-start w-full">
+                            <label for="manual-goal-input" class="text-sm opacity-80 mb-1">Meta diária (ml)</label>
+                            <input id="manual-goal-input" type="number" class="w-full bg-white/20 rounded-xl px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50" />
+                        </div>
+                        <button id="save-manual-goal-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl bg-white text-blue-500 font-bold hover:bg-gray-200 transition-colors mt-4 w-full" aria-label="Salvar meta">
+                            <i data-lucide="save" class="w-5 h-5"></i>
+                            <span>Salvar Meta</span>
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-bold mb-3">Meta por Peso</h3>
+                        <div class="flex flex-col gap-2 w-full">
+                            <div class="flex items-center justify-between w-full">
+                                <label for="weight-input" class="text-sm opacity-80 mb-1 flex items-center gap-2">
+                                    <i data-lucide="ruler" class="w-4 h-4"></i>
+                                    Peso (kg)
+                                </label>
+                                <input id="weight-input" type="number" class="w-20 bg-white/20 rounded-xl px-4 py-2 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 text-right" />
+                            </div>
+                            <div id="weight-goal-display" class="flex items-center justify-between w-full p-3 rounded-xl glass-effect mt-2">
+                                <span class="text-sm">Meta Recomendada: <span id="weight-goal-value" class="font-bold"></span></span>
+                                <button id="apply-weight-goal-btn" class="p-1 rounded-full bg-white text-blue-500 hover:bg-gray-200 transition-colors" aria-label="Aplicar meta por peso">
+                                    <i data-lucide="save" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-bold mb-3">Meta por Temperatura</h3>
+                        <div class="flex flex-col gap-2 w-full">
+                            <p id="temperature-display" class="flex items-center gap-2 text-sm opacity-80">
+                                <i data-lucide="thermometer" class="w-4 h-4"></i>
+                                Buscando temperatura...
+                            </p>
+                            <div id="temperature-goal-display" class="flex items-center justify-between w-full p-3 rounded-xl glass-effect mt-2">
+                                <span class="text-sm">Meta Recomendada: <span id="temperature-goal-value" class="font-bold"></span></span>
+                                <button id="apply-temp-goal-btn" class="p-1 rounded-full bg-white text-blue-500 hover:bg-gray-200 transition-colors" aria-label="Aplicar meta por temperatura">
+                                    <i data-lucide="save" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <button id="refresh-temp-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl glass-effect hover:bg-white/30 transition-colors w-full" aria-label="Buscar temperatura e meta">
+                                <i data-lucide="refresh-ccw" class="w-5 h-5"></i>
+                                <span>Atualizar Meta</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-bold mb-3">Ações Adicionais</h3>
+                        <button id="reset-water-btn" class="flex items-center justify-center gap-2 p-3 rounded-xl glass-effect hover:bg-white/30 transition-colors w-full" aria-label="Zerar Contador de Água">
+                            <i data-lucide="refresh-ccw" class="w-5 h-5"></i>
+                            <span>Zerar Contador de Água</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-
-            <div>
-              <h3 className="text-lg font-bold mb-3">Ações Adicionais</h3>
-              <button
-                onClick={onResetWater}
-                className="flex items-center justify-center gap-2 p-3 rounded-xl bg-white/20 hover:bg-white/30 transition-colors w-full"
-                aria-label="Zerar Contador de Água"
-              >
-                <RefreshCcw size={20} />
-                <span>Zerar Contador de Água</span>
-              </button>
+        </div>
+        
+        <div id="add-water-modal" class="hidden fixed inset-0 modal-overlay z-20 flex items-center justify-center">
+            <div class="w-full max-w-xs glass-effect rounded-3xl p-6 text-white flex flex-col items-center relative">
+                <h2 class="text-xl font-bold mb-6">Adicionar Água</h2>
+                <div class="grid grid-cols-3 gap-4 w-full mb-6">
+                    <button class="glass-effect rounded-xl p-4 text-center hover:bg-white/30 transition-colors add-shortcut-btn" data-amount="150">150ml</button>
+                    <button class="glass-effect rounded-xl p-4 text-center hover:bg-white/30 transition-colors add-shortcut-btn" data-amount="250">250ml</button>
+                    <button class="glass-effect rounded-xl p-4 text-center hover:bg-white/30 transition-colors add-shortcut-btn" data-amount="500">500ml</button>
+                </div>
+                <div class="w-full mb-6">
+                    <input id="custom-amount-input" type="number" placeholder="Ou digite um valor (ml)" class="glass-effect w-full rounded-xl px-4 py-3 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 bg-transparent" />
+                </div>
+                <div class="flex w-full gap-4">
+                    <button id="cancel-add-btn" class="flex-1 glass-effect rounded-xl py-3 hover:bg-white/20 transition-colors">Cancelar</button>
+                    <button id="confirm-add-btn" class="flex-1 bg-white text-blue-500 rounded-xl py-3 font-bold hover:bg-gray-200 transition-colors">Adicionar</button>
+                </div>
             </div>
-          </div>
         </div>
-      );
-    };
 
-    const ProgressChart = ({ currentWater, goalWater }) => {
-      const chartRef = useRef(null);
-      const chartInstanceRef = useRef(null);
-
-      useEffect(() => {
-        if (chartRef.current) {
-          const ctx = chartRef.current.getContext('2d');
-          if (chartInstanceRef.current) {
-            chartInstanceRef.current.destroy();
-          }
-          chartInstanceRef.current = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-              labels: ['Consumido', 'Restante'],
-              datasets: [{
-                data: [currentWater, Math.max(0, goalWater - currentWater)],
-                backgroundColor: ['#ffffff', 'rgba(255, 255, 255, 0.1)'],
-                borderWidth: 0,
-                borderRadius: 20,
-              }]
-            },
-            options: {
-              responsive: true,
-              cutout: '80%',
-              plugins: {
-                legend: { display: false },
-                tooltip: { enabled: false }
-              }
-            }
-          });
-        }
-        return () => {
-          if (chartInstanceRef.current) {
-            chartInstanceRef.current.destroy();
-          }
-        };
-      }, [currentWater, goalWater]);
-
-      return (
-        <div className="relative w-64 h-64">
-          <canvas ref={chartRef}></canvas>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white">
-            <span className="text-5xl font-bold">{currentWater}</span>
-            <span className="text-lg opacity-80">/ {goalWater} ml</span>
-          </div>
+        <div id="feedback-toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-30 p-4 rounded-xl shadow-lg transition-all duration-300 transform hidden text-white">
+            <p id="toast-message"></p>
         </div>
-      );
-    };
 
-    const BottomNav = ({ currentPage, onNavigate, onOpenAddWater }) => {
-      const commonButtonClasses = "p-3 rounded-full transition-colors";
-      const getButtonClasses = (page) =>
-        currentPage === page
-          ? `${commonButtonClasses} bg-white/20 cursor-default`
-          : `${commonButtonClasses} hover:bg-white/20`;
-
-      return (
-        <nav className="h-24 rounded-t-[30px] w-full mt-auto flex items-center justify-around text-white z-10">
-          <button
-            onClick={() => onNavigate('stats')}
-            className={getButtonClasses('stats')}
-            aria-label="Ver estatísticas"
-          >
-            <BarChart3 size={28} />
-          </button>
-
-          <button onClick={onOpenAddWater} className="w-20 h-20 rounded-full bg-white text-blue-500 text-5xl font-light flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300" aria-label="Adicionar água">+</button>
-
-          <button
-            onClick={() => onNavigate('settings')}
-            className={getButtonClasses('settings')}
-            aria-label="Abrir configurações"
-          >
-            <Settings size={28} />
-          </button>
+        <nav id="bottom-nav" class="h-24 rounded-t-[30px] w-full mt-auto flex items-center justify-around text-white z-10">
+            <button id="stats-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20" aria-label="Ver estatísticas">
+                <i data-lucide="bar-chart-3" class="w-7 h-7"></i>
+            </button>
+            <button id="add-water-nav-btn" class="w-20 h-20 rounded-full bg-white text-blue-500 text-5xl font-light flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300" aria-label="Adicionar água">
+                +
+            </button>
+            <button id="settings-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20" aria-label="Abrir configurações">
+                <i data-lucide="settings" class="w-7 h-7"></i>
+            </button>
         </nav>
-      );
-    };
+    </div>
 
-    const AddWaterModal = ({ isOpen, onClose, onAddWater }) => {
-      const [customAmount, setCustomAmount] = useState('');
-      const inputRef = useRef(null);
+    <script>
+        // Inicializa os ícones Lucide
+        lucide.createIcons();
 
-      useEffect(() => {
-        if (isOpen && inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, [isOpen]);
+        // Variáveis de estado
+        let state = {
+            currentWater: parseInt(localStorage.getItem('currentWater')) || 0,
+            goalWater: parseInt(localStorage.getItem('goalWater')) || 2500,
+            waterHistory: JSON.parse(localStorage.getItem('waterHistory')) || [0, 0, 0, 0, 0, 0, 0],
+            lastUpdateDate: localStorage.getItem('lastUpdateDate') || new Date().toDateString(),
+            currentPage: 'home',
+            userWeight: parseInt(localStorage.getItem('userWeight')) || 70,
+            recommendedGoalByTemperature: null,
+            recommendedGoalByWeight: null,
+            currentTemperature: null,
+        };
 
-      if (!isOpen) return null;
+        // Elementos do DOM
+        const pages = {
+            home: document.getElementById('home-page'),
+            stats: document.getElementById('stats-page'),
+            settings: document.getElementById('settings-page')
+        };
+        const pageTitleEl = document.getElementById('page-title');
+        const waterDisplay = {
+            current: document.getElementById('current-water-display'),
+            goal: document.getElementById('goal-water-display')
+        };
+        const navButtons = {
+            stats: document.getElementById('stats-nav-btn'),
+            add: document.getElementById('add-water-nav-btn'),
+            settings: document.getElementById('settings-nav-btn')
+        };
+        const addModal = document.getElementById('add-water-modal');
+        const customAmountInput = document.getElementById('custom-amount-input');
+        const toast = {
+            el: document.getElementById('feedback-toast'),
+            message: document.getElementById('toast-message')
+        };
+        const charts = {
+            progress: new Chart(document.getElementById('progress-chart').getContext('2d'), { type: 'doughnut' }),
+            stats: new Chart(document.getElementById('stats-chart').getContext('2d'), { type: 'bar' })
+        };
+        
+        // Elementos da página de Configurações
+        const settings = {
+            manualGoalInput: document.getElementById('manual-goal-input'),
+            saveManualBtn: document.getElementById('save-manual-goal-btn'),
+            weightInput: document.getElementById('weight-input'),
+            weightGoalDisplay: document.getElementById('weight-goal-display'),
+            weightGoalValue: document.getElementById('weight-goal-value'),
+            applyWeightBtn: document.getElementById('apply-weight-goal-btn'),
+            temperatureDisplay: document.getElementById('temperature-display'),
+            temperatureGoalDisplay: document.getElementById('temperature-goal-display'),
+            temperatureGoalValue: document.getElementById('temperature-goal-value'),
+            applyTempBtn: document.getElementById('apply-temp-goal-btn'),
+            refreshTempBtn: document.getElementById('refresh-temp-btn'),
+            resetBtn: document.getElementById('reset-water-btn'),
+            closeBtn: document.getElementById('close-settings-btn')
+        };
+        const stats = {
+            closeBtn: document.getElementById('close-stats-btn')
+        };
+        
+        // Funções
+        const saveState = () => {
+            localStorage.setItem('currentWater', state.currentWater);
+            localStorage.setItem('goalWater', state.goalWater);
+            localStorage.setItem('waterHistory', JSON.stringify(state.waterHistory));
+            localStorage.setItem('lastUpdateDate', state.lastUpdateDate);
+            localStorage.setItem('userWeight', state.userWeight);
+        };
 
-      const handleConfirm = () => {
-        const amount = parseInt(customAmount);
-        if (amount > 0) {
-          onAddWater(amount);
-          setCustomAmount('');
-        }
-      };
+        const updateUI = () => {
+            waterDisplay.current.textContent = state.currentWater;
+            waterDisplay.goal.textContent = `/ ${state.goalWater} ml`;
+            settings.manualGoalInput.value = state.goalWater;
+            settings.weightInput.value = state.userWeight;
+            
+            // Atualiza gráfico de progresso
+            charts.progress.data = {
+                datasets: [{
+                    data: [state.currentWater, Math.max(0, state.goalWater - state.currentWater)],
+                    backgroundColor: ['#ffffff', 'rgba(255, 255, 255, 0.1)'],
+                    borderWidth: 0,
+                    borderRadius: 20,
+                }]
+            };
+            charts.progress.options = { responsive: true, cutout: '80%', plugins: { legend: { display: false }, tooltip: { enabled: false } } };
+            charts.progress.update();
 
-      const handleShortcut = (amount) => {
-        onAddWater(amount);
-        setCustomAmount('');
-      };
+            // Atualiza gráfico de estatísticas
+            charts.stats.data = {
+                labels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Hoje'],
+                datasets: [{
+                    label: 'Consumo (ml)',
+                    data: state.waterHistory,
+                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                    borderColor: 'rgba(255, 255, 255, 0.8)',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                }, {
+                    label: 'Meta',
+                    data: Array(7).fill(state.goalWater),
+                    type: 'line',
+                    borderColor: '#ffffff',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                }]
+            };
+            charts.stats.options = {
+                responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                scales: { x: { grid: { display: false }, ticks: { color: 'white' } }, y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.2)' }, ticks: { color: 'white' } } }
+            };
+            charts.stats.update();
 
-      return (
-        <div className="fixed inset-0 w-full h-full bg-black/30 backdrop-blur-sm flex items-center justify-center z-20" onClick={onClose}>
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg w-full max-w-xs rounded-3xl p-6 text-white flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-6">Adicionar Água</h2>
+            // Atualiza a visualização da meta por peso
+            if (state.recommendedGoalByWeight) {
+                settings.weightGoalDisplay.classList.remove('hidden');
+                settings.weightGoalValue.textContent = `${state.recommendedGoalByWeight} ml`;
+            } else {
+                settings.weightGoalDisplay.classList.add('hidden');
+            }
 
-            <div className="grid grid-cols-3 gap-4 w-full mb-6">
-              <button onClick={() => handleShortcut(150)} className="bg-white/10 border border-white/20 rounded-xl p-4 text-center hover:bg-white/30 transition-colors">150ml</button>
-              <button onClick={() => handleShortcut(250)} className="bg-white/10 border border-white/20 rounded-xl p-4 text-center hover:bg-white/30 transition-colors">250ml</button>
-              <button onClick={() => handleShortcut(500)} className="bg-white/10 border border-white/20 rounded-xl p-4 text-center hover:bg-white/30 transition-colors">500ml</button>
-            </div>
+            // Atualiza a visualização da meta por temperatura
+            if (state.currentTemperature) {
+                settings.temperatureDisplay.innerHTML = `<i data-lucide="thermometer" class="w-4 h-4"></i> Temperatura atual: ${state.currentTemperature}°C`;
+                lucide.createIcons();
+            } else {
+                settings.temperatureDisplay.innerHTML = `<i data-lucide="thermometer" class="w-4 h-4"></i> Buscando temperatura...`;
+                lucide.createIcons();
+            }
+            if (state.recommendedGoalByTemperature) {
+                settings.temperatureGoalDisplay.classList.remove('hidden');
+                settings.temperatureGoalValue.textContent = `${state.recommendedGoalByTemperature} ml`;
+            } else {
+                settings.temperatureGoalDisplay.classList.add('hidden');
+            }
+        };
 
-            <div className="w-full mb-6">
-              <input
-                ref={inputRef}
-                type="number"
-                value={customAmount}
-                onChange={(e) => setCustomAmount(e.target.value)}
-                placeholder="Ou digite um valor (ml)"
-                className="bg-white/10 border border-white/20 w-full rounded-xl px-4 py-3 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
-              />
-            </div>
+        const showPage = (pageName) => {
+            const allPages = Object.values(pages);
+            allPages.forEach(page => page.classList.add('hidden'));
 
-            <div className="flex w-full gap-4">
-              <button onClick={onClose} className="flex-1 bg-white/10 rounded-xl py-3 hover:bg-white/20 transition-colors">Cancelar</button>
-              <button onClick={handleConfirm} className="flex-1 bg-white text-blue-500 rounded-xl py-3 font-bold hover:bg-gray-200 transition-colors">Adicionar</button>
-            </div>
-          </div>
-        </div>
-      );
-    };
+            const targetPage = pages[pageName];
+            targetPage.classList.remove('hidden');
+            
+            // Ajusta a animação
+            allPages.forEach(page => {
+                page.classList.add('opacity-0', '-translate-x-full');
+            });
+            targetPage.classList.remove('opacity-0', '-translate-x-full');
 
-    const FeedbackModal = ({ isOpen, message, isError }) => {
-      if (!isOpen) return null;
-      return (
-        <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-30 p-4 rounded-xl shadow-lg transition-all duration-300 transform ${isError ? 'bg-red-500' : 'bg-green-500'} text-white`}>
-          <p>{message}</p>
-        </div>
-      );
-    };
+            state.currentPage = pageName;
+            
+            // Atualiza título do header
+            const titles = { home: 'AquaFlow', stats: 'Estatísticas', settings: 'Configurações' };
+            pageTitleEl.textContent = titles[pageName];
+            
+            // Atualiza a navegação inferior
+            Object.values(navButtons).forEach(btn => btn.classList.remove('bg-white/20', 'cursor-default'));
+            navButtons[pageName]?.classList.add('bg-white/20', 'cursor-default');
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+            if (pageName === 'stats' || pageName === 'settings') {
+                navButtons.add.classList.add('opacity-50');
+            } else {
+                navButtons.add.classList.remove('opacity-50');
+            }
 
-    // Inicializa os ícones Lucide
-    lucide.createIcons();
-  </script>
+            updateUI();
+        };
+
+        const showModal = (modalEl, show) => {
+            if (show) {
+                modalEl.classList.remove('hidden');
+                setTimeout(() => { modalEl.style.opacity = 1; }, 10);
+            } else {
+                modalEl.style.opacity = 0;
+                setTimeout(() => { modalEl.classList.add('hidden'); }, 300);
+            }
+        };
+
+        const showToast = (message, isError = false) => {
+            toast.message.textContent = message;
+            toast.el.classList.remove('bg-green-500', 'bg-red-500');
+            toast.el.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
+            toast.el.classList.remove('hidden');
+
+            setTimeout(() => {
+                toast.el.classList.add('hidden');
+            }, 3000);
+        };
+
+        const handleDailyReset = () => {
+            const today = new Date().toDateString();
+            if (today !== state.lastUpdateDate) {
+                state.waterHistory.shift();
+                state.waterHistory.push(0);
+                state.currentWater = 0;
+                state.lastUpdateDate = today;
+                showToast('Um novo dia começou! Seu contador foi zerado.', false);
+                saveState();
+                updateUI();
+            }
+        };
+
+        const addWater = (amount) => {
+            state.currentWater += amount;
+            state.waterHistory[state.waterHistory.length - 1] += amount;
+            saveState();
+            updateUI();
+            showModal(addModal, false);
+        };
+
+        const handleFetchTemperature = async () => {
+            settings.refreshTempBtn.querySelector('i').classList.add('animate-spin');
+            settings.refreshTempBtn.disabled = true;
+            settings.temperatureDisplay.innerHTML = `<i data-lucide="thermometer" class="w-4 h-4"></i> Buscando temperatura...`;
+            lucide.createIcons();
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const simulatedTemp = 20 + Math.floor(Math.random() * 15);
+            state.currentTemperature = simulatedTemp;
+            
+            let newRecommendedGoal = state.goalWater;
+            if (simulatedTemp >= 30) {
+              newRecommendedGoal = Math.floor(state.goalWater * 1.3);
+            } else if (simulatedTemp >= 25) {
+              newRecommendedGoal = Math.floor(state.goalWater * 1.1);
+            } else {
+              newRecommendedGoal = state.goalWater;
+            }
+            state.recommendedGoalByTemperature = newRecommendedGoal;
+
+            settings.refreshTempBtn.querySelector('i').classList.remove('animate-spin');
+            settings.refreshTempBtn.disabled = false;
+            updateUI();
+        };
+
+        const calculateGoalByWeight = () => {
+            if (state.userWeight > 0) {
+                state.recommendedGoalByWeight = Math.floor(state.userWeight * 35);
+            } else {
+                state.recommendedGoalByWeight = null;
+            }
+            updateUI();
+        };
+
+
+        // Event Listeners
+        navButtons.add.addEventListener('click', () => showModal(addModal, true));
+        navButtons.stats.addEventListener('click', () => showPage('stats'));
+        navButtons.settings.addEventListener('click', () => showPage('settings'));
+
+        stats.closeBtn.addEventListener('click', () => showPage('home'));
+        settings.closeBtn.addEventListener('click', () => showPage('home'));
+
+        addModal.querySelector('#cancel-add-btn').addEventListener('click', () => showModal(addModal, false));
+        addModal.querySelectorAll('.add-shortcut-btn').forEach(btn => {
+            btn.addEventListener('click', () => addWater(parseInt(btn.dataset.amount)));
+        });
+        addModal.querySelector('#confirm-add-btn').addEventListener('click', () => {
+            const amount = parseInt(customAmountInput.value);
+            if (amount > 0) {
+                addWater(amount);
+                customAmountInput.value = '';
+            }
+        });
+
+        settings.saveManualBtn.addEventListener('click', () => {
+            const newGoal = parseInt(settings.manualGoalInput.value);
+            if (!isNaN(newGoal) && newGoal > 0) {
+                state.goalWater = newGoal;
+                showToast('Meta salva com sucesso!');
+                saveState();
+                updateUI();
+            } else {
+                showToast('Por favor, insira um valor válido para a meta.', true);
+            }
+        });
+
+        settings.weightInput.addEventListener('input', (e) => {
+            state.userWeight = parseInt(e.target.value) || 0;
+            calculateGoalByWeight();
+            saveState();
+        });
+
+        settings.applyWeightBtn.addEventListener('click', () => {
+            if (state.recommendedGoalByWeight) {
+                state.goalWater = state.recommendedGoalByWeight;
+                showToast(`Meta atualizada para ${state.recommendedGoalByWeight} ml!`);
+                saveState();
+                updateUI();
+            }
+        });
+
+        settings.applyTempBtn.addEventListener('click', () => {
+            if (state.recommendedGoalByTemperature) {
+                state.goalWater = state.recommendedGoalByTemperature;
+                showToast(`Meta atualizada para ${state.recommendedGoalByTemperature} ml!`);
+                saveState();
+                updateUI();
+            }
+        });
+
+        settings.refreshTempBtn.addEventListener('click', handleFetchTemperature);
+        settings.resetBtn.addEventListener('click', () => {
+            state.currentWater = 0;
+            showToast('Contador de água zerado!');
+            saveState();
+            updateUI();
+        });
+
+        // Inicialização
+        handleDailyReset();
+        updateUI();
+        calculateGoalByWeight();
+        // A busca por temperatura será chamada automaticamente ao entrar na página de settings
+        
+    </script>
 </body>
 </html>
