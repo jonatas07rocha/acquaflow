@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Metadados para PWA -->
+    <meta name="theme-color" content="#01579B"/>
+    <link rel="manifest" href="manifest.json">
     <title>Acqua Flow - Seu Aplicativo de Hidratação</title>
-    <!-- Importação da fonte Nunito -->
+    <!-- Fonte Nunito -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -17,9 +20,18 @@
         body {
             font-family: 'Nunito', sans-serif;
             line-height: 1.5;
+            /* Fundo animado com gradiente que simula água */
+            background: linear-gradient(-45deg, #03A9F4, #01579B, #0277BD, #4FC3F7);
+            background-size: 400% 400%;
+            animation: water-flow 15s ease infinite;
         }
 
-        /* Animação de pulso removida, pois o fundo agora é estático */
+        @keyframes water-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         @keyframes liquid-pulse {
             0% { box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
             50% { box-shadow: 0 10px 40px 0 rgba(31, 38, 135, 0.5); }
@@ -127,14 +139,13 @@
         }
     </style>
 </head>
-<!-- FIX: Removida a classe 'font-sans' do Tailwind para permitir que a fonte 'Nunito' seja aplicada corretamente. -->
-<body class="h-screen overflow-hidden flex items-center justify-center p-4 text-white" style="background-image: url('https://img.freepik.com/fotos-premium/3d-monocromatico-rendem-o-fundo-abstrato-do-fluxo-de-vidro-moderno-formas-liquidas-esferas-de-vidro_363039-1825.jpg'); background-size: cover; background-position: center;">
+<body class="h-screen overflow-hidden flex items-center justify-center p-4 text-white">
 
     <div class="w-full h-full flex flex-col items-center justify-between md:w-full md:max-w-sm md:h-[90vh] md:max-h-[800px] md:bg-gray-900/60 md:rounded-[40px] md:shadow-2xl md:overflow-hidden md:relative md:p-6 md:sm:p-8">
 
         <header id="header" class="flex flex-col text-white z-10 animate-fade-in w-full md:w-auto md:mb-8">
             <h1 id="page-title" class="font-bold text-3xl capitalize">Acqua Flow</h1>
-            <p class="text-sm opacity-80 mt-1">Olá! Mantenha-se hidratado.</p>
+            <!-- REMOVIDO: A saudação foi removida. -->
         </header>
 
         <!-- Círculo de Progresso -->
@@ -877,6 +888,17 @@
             
             if (!isIOS() && state.notificationsEnabled) {
                 scheduleNotification();
+            }
+
+            // NOVO: Registra o Service Worker para PWA
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').then(registration => {
+                        console.log('ServiceWorker registrado com sucesso: ', registration.scope);
+                    }, function(err) {
+                        console.log('Falha no registro do ServiceWorker: ', err);
+                    });
+                });
             }
         };
     </script>
