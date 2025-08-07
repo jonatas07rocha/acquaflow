@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AquaFlow - Seu Aplicativo de Hidratação</title>
+    <title>Acqua Flow - Seu Aplicativo de Hidratação</title>
     <!-- Importação da fonte Inter com pesos adicionais para melhor suporte ao Tailwind -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -136,7 +136,7 @@
     <div class="w-full h-full flex flex-col items-center justify-between md:w-full md:max-w-sm md:h-[90vh] md:max-h-[800px] md:bg-gray-900/60 md:rounded-[40px] md:shadow-2xl md:overflow-hidden md:relative md:p-6 md:sm:p-8">
 
         <header id="header" class="flex flex-col text-white z-10 animate-fade-in w-full md:w-auto md:mb-8">
-            <h1 id="page-title" class="font-bold text-3xl capitalize">AquaFlow</h1>
+            <h1 id="page-title" class="font-bold text-3xl capitalize">Acqua Flow</h1>
             <p class="text-sm opacity-80 mt-1">Olá! Mantenha-se hidratado.</p>
         </header>
 
@@ -614,14 +614,14 @@
             
             const formatForICS = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
             
-            const eventData = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//AquaFlow//Lembrete de Hidratação//PT-BR\nBEGIN:VEVENT\nUID:${Date.now()}@aquaflow.app\nDTSTAMP:${formatForICS(new Date())}\nDTSTART:${formatForICS(startDate)}\nDTEND:${formatForICS(endDate)}\nSUMMARY:💧 Hora de beber água!\nDESCRIPTION:Lembrete de hidratação. Mantenha-se hidratado para atingir sua meta diária.\nURL:${window.location.href}\nEND:VEVENT\nEND:VCALENDAR`;
+            const eventData = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Acqua Flow//Lembrete de Hidratação//PT-BR\nBEGIN:VEVENT\nUID:${Date.now()}@Acqua Flow.app\nDTSTAMP:${formatForICS(new Date())}\nDTSTART:${formatForICS(startDate)}\nDTEND:${formatForICS(endDate)}\nSUMMARY:💧 Hora de beber água!\nDESCRIPTION:Lembrete de hidratação. Mantenha-se hidratado para atingir sua meta diária.\nURL:${window.location.href}\nEND:VEVENT\nEND:VCALENDAR`;
 
             const blob = new Blob([eventData], { type: 'text/calendar' });
             const url = URL.createObjectURL(blob);
             
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'aquaflow-lembrete.ics';
+            a.download = 'Acqua Flow-lembrete.ics';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
