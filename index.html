@@ -141,11 +141,11 @@
 </head>
 <body class="h-screen overflow-hidden flex items-center justify-center p-4 text-white">
 
-    <div class="w-full h-full flex flex-col items-center justify-between md:w-full md:max-w-sm md:h-[90vh] md:max-h-[800px] md:bg-gray-900/60 md:rounded-[40px] md:shadow-2xl md:overflow-hidden md:relative md:p-6 md:sm:p-8">
+    <!-- NOVO: As classes que criam a "moldura" agora são aplicadas em todas as telas, não apenas em 'md' para cima. -->
+    <div class="w-full max-w-sm h-[90vh] max-h-[800px] bg-gray-900/60 rounded-[40px] shadow-2xl overflow-hidden relative p-6 flex flex-col items-center justify-between">
 
         <header id="header" class="flex flex-col text-white z-10 animate-fade-in w-full md:w-auto md:mb-8">
             <h1 id="page-title" class="font-bold text-3xl capitalize">Acqua Flow</h1>
-            <!-- REMOVIDO: A saudação foi removida. -->
         </header>
 
         <!-- Círculo de Progresso -->
@@ -668,20 +668,38 @@
             if (modalEl) modalEl.classList.remove('is-visible');
         };
 
+        // NOVO: Função showToast refatorada para usar classList e aplicar efeito glass
         const showToast = (message, isError = false) => {
             playBubblePop();
             toast.message.textContent = message;
-            toast.el.className = `fixed bottom-24 left-1/2 -translate-x-1/2 z-30 p-4 rounded-xl shadow-lg transition-all duration-300 transform text-white ${isError ? 'bg-red-500' : 'bg-green-500'}`;
-            toast.el.classList.remove('scale-90', 'opacity-0');
+
+            // Limpa classes de estado anteriores
+            toast.el.classList.remove('bg-green-500/50', 'bg-red-500/50', 'backdrop-blur-md', 'border', 'border-white/20', 'scale-100', 'opacity-100');
+            toast.el.classList.add('scale-90', 'opacity-0');
+
+            // Adiciona as novas classes para o efeito glass e a cor de estado
+            toast.el.classList.add(
+                'backdrop-blur-md',
+                'border',
+                'border-white/20',
+                isError ? 'bg-red-500/50' : 'bg-green-500/50'
+            );
+            
+            toast.el.classList.remove('hidden');
+
+            // Anima a entrada da notificação
             setTimeout(() => {
-                toast.el.classList.remove('hidden');
+                toast.el.classList.remove('scale-90', 'opacity-0');
                 toast.el.classList.add('scale-100', 'opacity-100');
             }, 10);
 
+            // Anima a saída da notificação
             setTimeout(() => {
                 toast.el.classList.remove('scale-100', 'opacity-100');
                 toast.el.classList.add('scale-90', 'opacity-0');
-                setTimeout(() => { toast.el.classList.add('hidden'); }, 300);
+                setTimeout(() => { 
+                    toast.el.classList.add('hidden'); 
+                }, 300);
             }, 3000);
         };
 
