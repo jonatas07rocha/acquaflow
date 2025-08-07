@@ -42,7 +42,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* NOVO: Animação de "pop" para feedback visual */
         @keyframes pop-in {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -80,7 +79,7 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1rem; /* Padding ajustado para cards menores */
+            padding: 1rem;
             border-radius: 1.5rem;
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
@@ -151,61 +150,63 @@
 </head>
 <body class="h-screen overflow-hidden flex items-center justify-center p-4 text-white">
 
-    <div class="w-full max-w-sm h-[90vh] max-h-[800px] bg-gray-900/60 rounded-[40px] shadow-2xl overflow-hidden relative p-6 flex flex-col items-center justify-between">
+    <!-- FIX: Altura do contêiner aumentada e layout flex aprimorado para melhor distribuição vertical. -->
+    <div class="w-full max-w-sm h-[95vh] max-h-[900px] bg-gray-900/60 rounded-[40px] shadow-2xl overflow-hidden relative p-6 flex flex-col">
 
-        <header id="header" class="flex justify-between items-center text-white z-10 animate-fade-in w-full mb-4">
+        <header id="header" class="flex-shrink-0 flex justify-between items-center text-white z-10 animate-fade-in w-full">
             <h1 id="page-title" class="font-bold text-3xl capitalize">Acqua Flow</h1>
-            <!-- NOVO: Indicador de Sequência (Streak) -->
             <div id="streak-indicator" class="flex items-center gap-1 glass-card px-3 py-2">
                 <i data-lucide="flame" class="w-5 h-5 text-orange-400"></i>
                 <span id="header-streak-count" class="font-bold text-lg">0</span>
             </div>
         </header>
 
-        <!-- Círculo de Progresso -->
-        <div id="dashboard-container" class="flex-1 flex flex-col items-center justify-center text-center animate-fade-in w-full">
-            <div id="progress-circle-container" class="relative w-56 h-56 md:w-64 md:h-64 flex items-center justify-center">
-                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="12" />
-                    <circle id="progress-ring" cx="60" cy="60" r="54" fill="none" stroke="url(#progress-gradient)" stroke-width="12" stroke-linecap="round" style="transition: stroke-dashoffset 0.5s ease-out;"></circle>
-                    <defs>
-                        <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
-                            <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:1" />
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <div id="progress-text" class="absolute flex flex-col items-center justify-center text-center">
-                    <span id="current-water-display" class="text-5xl font-bold">0</span>
-                    <span class="text-lg opacity-80">ml</span>
-                    <span id="percentage-display" class="text-sm font-medium opacity-60 mt-1">0% da meta</span>
+        <!-- NOVO: Contêiner principal para o conteúdo rolável -->
+        <main class="flex-1 w-full flex flex-col justify-around overflow-y-auto py-2">
+            <!-- Círculo de Progresso -->
+            <div id="dashboard-container" class="flex flex-col items-center justify-center text-center animate-fade-in w-full">
+                <div id="progress-circle-container" class="relative w-56 h-56 md:w-64 md:h-64 flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="12" />
+                        <circle id="progress-ring" cx="60" cy="60" r="54" fill="none" stroke="url(#progress-gradient)" stroke-width="12" stroke-linecap="round" style="transition: stroke-dashoffset 0.5s ease-out;"></circle>
+                        <defs>
+                            <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div id="progress-text" class="absolute flex flex-col items-center justify-center text-center">
+                        <span id="current-water-display" class="text-5xl font-bold">0</span>
+                        <span class="text-lg opacity-80">ml</span>
+                        <span id="percentage-display" class="text-sm font-medium opacity-60 mt-1">0% da meta</span>
+                    </div>
+                </div>
+                <p id="motivational-message" class="text-sm opacity-80 mt-3 h-5"></p>
+            </div>
+
+            <!-- Cards de Informação Rápida -->
+            <div class="grid grid-cols-2 gap-4 w-full animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="glass-card text-center">
+                    <h3 class="text-xs opacity-70">Meta Diária</h3>
+                    <p id="goal-card-value" class="font-bold text-xl">2500 ml</p>
+                </div>
+                <div class="glass-card text-center">
+                    <h3 class="text-xs opacity-70">Último Gole</h3>
+                    <p id="last-drink-card-value" class="font-bold text-xl">--:--</p>
                 </div>
             </div>
-             <!-- NOVO: Mensagem Motivacional -->
-            <p id="motivational-message" class="text-sm opacity-80 mt-4 h-5"></p>
-        </div>
 
-        <!-- NOVO: Cards de Informação Rápida -->
-        <div class="grid grid-cols-2 gap-4 w-full my-4 animate-fade-in" style="animation-delay: 0.2s;">
-            <div class="glass-card text-center">
-                <h3 class="text-xs opacity-70">Meta Diária</h3>
-                <p id="goal-card-value" class="font-bold text-xl">2500 ml</p>
+            <!-- Atalhos Rápidos para Adicionar Água -->
+            <div class="w-full animate-fade-in" style="animation-delay: 0.4s;">
+                <p class="text-center text-sm opacity-70 mb-2">Adicionar rápido</p>
+                <div class="grid grid-cols-3 gap-4">
+                    <button class="btn-glass rounded-xl p-3 text-center text-lg font-medium hover:bg-white/20 transition-colors quick-add-btn" data-amount="150">150ml</button>
+                    <button class="btn-glass rounded-xl p-3 text-center text-lg font-medium hover:bg-white/20 transition-colors quick-add-btn" data-amount="250">250ml</button>
+                    <button class="btn-glass rounded-xl p-3 text-center text-lg font-medium hover:bg-white/20 transition-colors quick-add-btn" data-amount="500">500ml</button>
+                </div>
             </div>
-            <div class="glass-card text-center">
-                <h3 class="text-xs opacity-70">Último Gole</h3>
-                <p id="last-drink-card-value" class="font-bold text-xl">--:--</p>
-            </div>
-        </div>
-
-        <!-- NOVO: Atalhos Rápidos para Adicionar Água -->
-        <div class="w-full my-4 animate-fade-in" style="animation-delay: 0.4s;">
-            <p class="text-center text-sm opacity-70 mb-2">Adicionar rápido</p>
-            <div class="grid grid-cols-3 gap-4">
-                <button class="btn-glass rounded-xl p-3 text-center text-lg font-medium hover:bg-white/20 transition-colors quick-add-btn" data-amount="150">150ml</button>
-                <button class="btn-glass rounded-xl p-3 text-center text-lg font-medium hover:bg-white/20 transition-colors quick-add-btn" data-amount="250">250ml</button>
-                <button class="btn-glass rounded-xl p-3 text-center text-lg font-medium hover:bg-white/20 transition-colors quick-add-btn" data-amount="500">500ml</button>
-            </div>
-        </div>
+        </main>
         
         <div id="add-water-modal" class="modal-container modal-overlay">
             <div class="w-full max-w-xs glass-effect rounded-3xl p-6 text-white flex flex-col items-center relative modal-content">
@@ -346,7 +347,7 @@
             <p id="toast-message"></p>
         </div>
 
-        <nav id="bottom-nav" class="h-24 rounded-t-[30px] w-full mt-auto flex items-center justify-around text-white z-10 animate-fade-in md:glass-effect md:mt-0" style="animation-delay: 0.5s;">
+        <nav id="bottom-nav" class="flex-shrink-0 h-24 rounded-t-[30px] w-full mt-auto flex items-center justify-around text-white z-10 animate-fade-in md:glass-effect" >
             <button id="stats-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20 btn-glass" aria-label="Abrir Dashboard">
                 <i data-lucide="layout-dashboard" class="w-7 h-7"></i>
             </button>
@@ -409,7 +410,6 @@
             notificationsEnabled: localStorage.getItem('notificationsEnabled') === 'true' || false,
             streakCount: parseInt(localStorage.getItem('streakCount')) || 0,
             lastStreakDate: localStorage.getItem('lastStreakDate') || null,
-            // NOVO: Estado para último gole
             lastDrinkTime: localStorage.getItem('lastDrinkTime') || null,
             lastDrinkAmount: parseInt(localStorage.getItem('lastDrinkAmount')) || 0,
         };
@@ -497,7 +497,6 @@
             const percentage = Math.floor(progress * 100);
             progressDisplay.percentage.textContent = `${isNaN(percentage) ? 0 : percentage}% da meta`;
 
-            // Atualiza mensagem motivacional
             if (progress >= 1) {
                 progressDisplay.motivationalMessage.textContent = "Parabéns, meta atingida! 🎉";
             } else if (progress > 0.7) {
@@ -519,7 +518,6 @@
                 settings.weightInput.value = state.userWeight;
             }
             
-            // Atualiza novos cards e streak
             if (statsDisplay.headerStreak) statsDisplay.headerStreak.textContent = state.streakCount;
             if (statsDisplay.goalCard) statsDisplay.goalCard.textContent = `${state.goalWater} ml`;
             if (statsDisplay.lastDrinkCard) {
@@ -797,14 +795,12 @@
                 state.shortcutHistory[amount] += amount;
             }
 
-            // NOVO: Atualiza estado do último gole
             const now = new Date();
             state.lastDrinkTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
             state.lastDrinkAmount = amount;
 
             showToast(`Adicionado ${amount}ml de água.`);
             
-            // NOVO: Animação de pop no contador
             progressDisplay.current.classList.add('animate-pop');
             setTimeout(() => {
                 progressDisplay.current.classList.remove('animate-pop');
@@ -893,7 +889,6 @@
                 }
             });
 
-            // NOVO: Event listeners para atalhos rápidos na tela inicial
             document.querySelectorAll('.quick-add-btn').forEach(btn => {
                 btn.addEventListener('click', () => addWater(parseInt(btn.dataset.amount)));
             });
@@ -968,7 +963,6 @@
             statsDisplay.streak = modals.stats.querySelector('#streak-count');
             statsDisplay.average = modals.stats.querySelector('#average-daily');
             
-            // Inicializa os elementos do círculo de progresso e novos elementos da tela inicial
             progressDisplay.circle = document.getElementById('progress-ring');
             progressDisplay.current = document.getElementById('current-water-display');
             progressDisplay.percentage = document.getElementById('percentage-display');
@@ -977,7 +971,6 @@
             statsDisplay.goalCard = document.getElementById('goal-card-value');
             statsDisplay.lastDrinkCard = document.getElementById('last-drink-card-value');
 
-            // Inicializa o gráfico de estatísticas
             if (document.getElementById('stats-chart')) {
                 charts.stats = new Chart(document.getElementById('stats-chart').getContext('2d'), { type: 'bar' });
             }
@@ -991,7 +984,6 @@
                 scheduleNotification();
             }
 
-            // NOVO: Registra o Service Worker para PWA
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                     navigator.serviceWorker.register('/sw.js').then(registration => {
