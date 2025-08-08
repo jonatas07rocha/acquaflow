@@ -1,83 +1,76 @@
-import { themes } from './themes.js';
-import { state } from './state.js';
-import { dom } from './ui.js';
-import { renderUI, updateUI, showModal, hideModal } from './ui_controller.js';
 import { loadState, saveState } from './persistence.js';
+import { renderDashboard, showAddWaterModal, showSettingsModal, enterReorderMode, saveLayout } from './ui.js';
 
-// --- LÓGICA PRINCIPAL ---
+// Função para adicionar água, agora no módulo principal
 function addWater(amount) {
-    if (isNaN(amount) || amount <= 0) return;
+    if (amount <= 0 || isNaN(amount)) return;
     
-    state.currentWater += amount;
-    state.waterHistory[state.waterHistory.length - 1] += amount;
-    if (state.shortcutHistory.hasOwnProperty(amount)) {
-        state.shortcutHistory[amount] = (state.shortcutHistory[amount] || 0) + 1;
-    }
+    const state = loadState();
+    state.userData.currentAmount += amount;
+    
     const now = new Date();
-    state.lastDrinkTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    state.lastDrinkAmount = amount;
+    const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    state.userData.history.unshift({ amount, time });
     
-    dom.currentWaterDisplay.classList.add('animate-pop');
-    setTimeout(() => dom.currentWaterDisplay.classList.remove('animate-pop'), 300);
-
-    saveState();
-    updateUI();
-    hideModal(dom.addWaterModal);
+    saveState(state);
+    renderDashboard(); // Re-renderiza o dashboard para refletir a mudança
 }
 
-// --- INICIALIZAÇÃO ---
+// Inicialização da Aplicação
 function initializeApp() {
-    applyTheme(themes.acqua_vibrant);
-    loadState();
-    renderUI();
-    setupEventListeners();
+    const today = new Date();
+    document.getElementById('date-header').textContent = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     
-    // --- MUDANÇA AQUI ---
-    // Garante que os ícones sejam criados DEPOIS que o HTML deles existir.
-    lucide.createIcons(); 
+    renderDashboard();
+    setupEventListeners();
 }
 
-function applyTheme(themeObject) {
-    const root = document.documentElement;
-    Object.keys(themeObject).forEach(key => {
-        if (key !== 'name') {
-            root.style.setProperty(key, themeObject[key]);
-        }
-    });
-    document.body.style.animation = 'water-flow 15s ease infinite';
-}
-
+// Configura todos os ouvintes de eventos
 function setupEventListeners() {
-    // Navegação e Modais
-    dom.statsNavBtn.addEventListener('click', () => showModal(dom.statsModal));
-    dom.addWaterNavBtn.addEventListener('click', () => showModal(dom.addWaterModal));
-    dom.settingsNavBtn.addEventListener('click', () => showModal(dom.settingsModal));
+    // Usa delegação de eventos para botões que são criados dinamicamente
+    document.body.addEventListener('click', (event) => {
+        const target = event.target.closest('button');
+        if (!target) return;
 
-    dom.closeStatsModalBtn.addEventListener('click', () => hideModal(dom.statsModal));
-    dom.closeAddModalBtn.addEventListener('click', () => hideModal(dom.addWaterModal));
-    dom.closeSettingsModalBtn.addEventListener('click', () => hideModal(dom.settingsModal));
+        // Botões do Cabeçalho
+        if (target.closest('#settings-button')) showSettingsModal();
+        if (target.id === 'save-layout-btn') saveLayout();
+        
+        // Ações dos Widgets
+        if (target.closest('.main-add-button')) showAddWaterModal();
 
-    // Ações
-    dom.quickAddButtons.forEach(btn => {
-        btn.addEventListener('click', () => addWater(parseInt(btn.dataset.amount)));
-    });
-    dom.addShortcutButtons.forEach(btn => {
-        btn.addEventListener('click', () => addWater(parseInt(btn.dataset.amount)));
-    });
-    dom.confirmAddBtn.addEventListener('click', () => {
-        const amount = parseInt(dom.customAmountInput.value);
-        addWater(amount);
-        dom.customAmountInput.value = '';
-    });
-    dom.saveManualGoalBtn.addEventListener('click', () => {
-        const newGoal = parseInt(dom.manualGoalInput.value);
-        if (!isNaN(newGoal) && newGoal > 0) {
-            state.goalWater = newGoal;
-            saveState();
-            updateUI();
+        // Ações dos Modais
+        if (target.dataset.action === 'addCustomWater') {
+            const amount = parseInt(document.getElementById('custom-amount').value, 10);
+            addWater(amount);
+            document.getElementById('add-water-modal').remove();
+        }
+        if (target.dataset.action === 'closeModal') {
+            target.closest('.modal-container').remove();
+        }
+        if (target.dataset.action === 'enterReorderMode') enterReorderMode();
+        if (target.dataset.action === 'saveSettings') {
+            const state = loadState();
+            const newGoal = parseInt(document.getElementById('goal-input').value, 10);
+            if (!isNaN(newGoal) && newGoal > 0) {
+                state.settings.dailyGoal = newGoal;
+            }
+            state.settings.reminders = document.getElementById('reminders-toggle').checked;
+            saveState(state);
+            renderDashboard();
+            document.getElementById('settings-modal').remove();
+        }
+        if (target.closest('.theme-selector-item')) {
+            const themeName = target.closest('.theme-selector-item').dataset.theme;
+            const state = loadState();
+            state.settings.theme = themeName;
+            saveState(state);
+            renderDashboard(); // Re-renderiza para aplicar o tema
+            document.getElementById('settings-modal').remove();
+            showSettingsModal(); // Reabre o modal para mostrar a seleção
         }
     });
 }
 
+// Inicia tudo quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', initializeApp);
-
