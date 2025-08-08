@@ -1,54 +1,46 @@
-import { loadState, saveState } from './persistence.js';
-import { renderDashboard, showAddWaterModal, showSettingsModal, enterReorderMode, saveLayout } from './ui.js';
+import { updateState } from './state.js';
+import { renderDashboard, showAddWaterModal, showSettingsModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
 
 function addWater(amount) {
     if (amount <= 0 || isNaN(amount)) return;
-    
-    const state = loadState();
-    state.dailyUserData.currentAmount += amount;
-    
+
+    // A lógica de manipulação do estado foi movida para o módulo 'state'
+    // Aqui, apenas disparamos a atualização.
+    const state = getState();
+    const newAmount = state.dailyUserData.currentAmount + amount;
     const now = new Date();
     const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-    state.dailyUserData.history.unshift({ amount, time });
-
+    const newHistory = [{ amount, time }, ...state.dailyUserData.history];
     const dayOfWeek = now.getDay();
     const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
-    const dailyPercentage = Math.min(Math.round((state.dailyUserData.currentAmount / state.settings.dailyGoal) * 100), 100);
-    state.persistentUserData.weeklyProgress[dayIndex].p = dailyPercentage;
+    const dailyPercentage = Math.min(Math.round((newAmount / state.settings.dailyGoal) * 100), 100);
+    const newWeeklyProgress = [...state.persistentUserData.weeklyProgress];
+    newWeeklyProgress[dayIndex].p = dailyPercentage;
+
+    updateState({
+        dailyUserData: {
+            currentAmount: newAmount,
+            history: newHistory
+        },
+        persistentUserData: {
+            weeklyProgress: newWeeklyProgress
+        }
+    });
     
-    saveState(state);
-    renderDashboard();
+    updateDynamicContent();
 }
 
 function handleReminderToggle(event) {
     const isEnabled = event.target.checked;
-    const state = loadState();
-    state.settings.reminders = isEnabled;
-    saveState(state);
+    updateState({ settings: { reminders: isEnabled } });
 
     if (isEnabled && Notification.permission !== 'granted') {
         Notification.requestPermission().then(permission => {
             if (permission !== 'granted') {
                 event.target.checked = false;
-                const currentState = loadState();
-                currentState.settings.reminders = false;
-                saveState(currentState);
+                updateState({ settings: { reminders: false } });
             }
         });
-    }
-}
-
-function initializeApp() {
-    // 1. Renderiza a interface primeiro para garantir que todos os elementos existam.
-    renderDashboard();
-    // 2. Agora que os elementos existem, configura os eventos.
-    setupEventListeners();
-
-    // 3. Registra o Service Worker.
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => console.log('Service Worker registado com sucesso:', registration))
-            .catch(error => console.log('Falha ao registar Service Worker:', error));
     }
 }
 
@@ -64,35 +56,43 @@ function setupEventListeners() {
             case 'saveLayout': saveLayout(); break;
             case 'showAddWater': showAddWaterModal(); break;
             case 'addCustomWater':
-                const amount = parseInt(document.getElementById('custom-amount').value, 10);
-                addWater(amount);
-                targetElement.closest('.modal-container')?.remove();
+                const amountInput = document.getElementById('custom-amount');
+                if (amountInput && amountInput.value) {
+                    const amount = parseInt(amountInput.value, 10);
+                    addWater(amount);
+                }
+                closeAllModals();
                 break;
             case 'closeModal':
-                targetElement.closest('.modal-container')?.remove();
+                closeAllModals();
                 break;
             case 'enterReorderMode':
                 enterReorderMode();
                 break;
             case 'saveSettings':
-                const state = loadState();
                 const newGoal = parseInt(document.getElementById('goal-input').value, 10);
+                const reminders = document.getElementById('reminders-toggle').checked;
+                
+                const settingsToUpdate = { reminders };
                 if (!isNaN(newGoal) && newGoal > 0) {
-                    state.settings.dailyGoal = newGoal;
+                    settingsToUpdate.dailyGoal = newGoal;
                 }
-                state.settings.reminders = document.getElementById('reminders-toggle').checked;
-                saveState(state);
+                
+                updateState({ settings: settingsToUpdate });
                 renderDashboard();
-                targetElement.closest('.modal-container')?.remove();
+                closeAllModals();
                 break;
             case 'selectTheme':
                 const themeName = targetElement.dataset.theme;
-                const themeState = loadState();
-                themeState.settings.theme = themeName;
-                saveState(themeState);
-                renderDashboard();
-                document.getElementById('settings-modal')?.remove();
-                showSettingsModal();
+                updateState({ settings: { theme: themeName } });
+                applyTheme(themeName);
+                
+                document.querySelectorAll('.theme-selector-item .w-10').forEach(el => {
+                    el.classList.remove('border-white');
+                    el.classList.add('border-transparent');
+                });
+                targetElement.querySelector('.w-10').classList.add('border-white');
+                targetElement.querySelector('.w-10').classList.remove('border-transparent');
                 break;
         }
     });
@@ -102,6 +102,17 @@ function setupEventListeners() {
             handleReminderToggle(event);
         }
     });
+}
+
+function initializeApp() {
+    renderDashboard();
+    setupEventListeners();
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then(registration => console.log('Service Worker registrado com sucesso:', registration))
+            .catch(error => console.log('Falha ao registrar Service Worker:', error));
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
