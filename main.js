@@ -5,22 +5,41 @@ function addWater(amount) {
     if (amount <= 0 || isNaN(amount)) return;
     
     const state = loadState();
-    state.userData.currentAmount += amount;
+    state.dailyUserData.currentAmount += amount;
     
     const now = new Date();
     const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-    state.userData.history.unshift({ amount, time });
+    state.dailyUserData.history.unshift({ amount, time });
 
-    // --- CORREÇÃO APLICADA AQUI ---
-    // Atualiza o progresso do dia atual na barra semanal
-    const dayOfWeek = now.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1; // Ajusta para o array que começa na Segunda
-    const dailyPercentage = Math.min(Math.round((state.userData.currentAmount / state.settings.dailyGoal) * 100), 100);
-    state.userData.weeklyProgress[dayIndex].p = dailyPercentage;
-    // --- FIM DA CORREÇÃO ---
+    const dayOfWeek = now.getDay();
+    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1; // Ajusta para o array que começa na Segunda (0) e termina no Domingo (6)
+    const dailyPercentage = Math.min(Math.round((state.dailyUserData.currentAmount / state.settings.dailyGoal) * 100), 100);
+    state.persistentUserData.weeklyProgress[dayIndex].p = dailyPercentage;
     
     saveState(state);
     renderDashboard();
+}
+
+function handleReminderToggle(event) {
+    const isEnabled = event.target.checked;
+    if (isEnabled && Notification.permission !== 'granted') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                console.log('Permissão para notificações concedida!');
+                // Aqui você pode adicionar lógica para agendar notificações
+            } else {
+                console.log('Permissão para notificações negada.');
+                event.target.checked = false; // Desfaz o toggle se a permissão for negada
+            }
+            const state = loadState();
+            state.settings.reminders = event.target.checked;
+            saveState(state);
+        });
+    } else {
+        const state = loadState();
+        state.settings.reminders = isEnabled;
+        saveState(state);
+    }
 }
 
 function initializeApp() {
@@ -39,13 +58,10 @@ function initializeApp() {
 
 function setupEventListeners() {
     document.body.addEventListener('click', (event) => {
-        // --- CORREÇÃO APLICADA AQUI ---
-        // Alvo agora é qualquer elemento com data-action, não apenas botões
         const targetElement = event.target.closest('[data-action]');
         if (!targetElement) return;
 
         const action = targetElement.dataset.action;
-        // --- FIM DA CORREÇÃO ---
 
         switch(action) {
             case 'showSettings':
@@ -74,7 +90,7 @@ function setupEventListeners() {
                 if (!isNaN(newGoal) && newGoal > 0) {
                     state.settings.dailyGoal = newGoal;
                 }
-                state.settings.reminders = document.getElementById('reminders-toggle').checked;
+                // A lógica do toggle é tratada em um evento 'change' separado
                 saveState(state);
                 renderDashboard();
                 targetElement.closest('.modal-container')?.remove();
@@ -88,6 +104,13 @@ function setupEventListeners() {
                 document.getElementById('settings-modal')?.remove();
                 showSettingsModal();
                 break;
+        }
+    });
+
+    // Evento separado para o toggle de lembretes
+    document.body.addEventListener('change', (event) => {
+        if (event.target.id === 'reminders-toggle') {
+            handleReminderToggle(event);
         }
     });
 }
