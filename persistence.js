@@ -7,8 +7,8 @@ const defaultState = {
     },
     persistentUserData: {
         weeklyProgress: [
-            { day: 'S', p: 0 }, { day: 'T', p: 0 }, { day: 'Q', p: 0 }, { day: 'Q', p: 0 },
-            { day: 'S', p: 0 }, { day: 'S', p: 0 }, { day: 'D', p: 0 }
+            { day: 'Seg', p: 0 }, { day: 'Ter', p: 0 }, { day: 'Qua', p: 0 }, { day: 'Qui', p: 0 },
+            { day: 'Sex', p: 0 }, { day: 'Sáb', p: 0 }, { day: 'Dom', p: 0 }
         ],
         achievements: [
             { id: 'dias3', n: '3 Dias', u: false }, { id: 'meta5', n: '5 Metas', u: false },
@@ -30,34 +30,32 @@ function getTodayKey() {
 }
 
 export function loadState() {
-    const settings = JSON.parse(localStorage.getItem('settings')) || defaultState.settings;
+    const settings = JSON.parse(localStorage.getItem('settings')) || { ...defaultState.settings };
     if (!settings.widgetOrder) {
         settings.widgetOrder = defaultState.settings.widgetOrder;
     }
 
-    let persistentUserData = JSON.parse(localStorage.getItem('persistentUserData')) || defaultState.persistentUserData;
+    let persistentUserData = JSON.parse(localStorage.getItem('persistentUserData')) || { ...defaultState.persistentUserData };
     
-    const today = new Date().toDateString();
-    if (persistentUserData.lastResetDate !== today) {
-        const lastDate = persistentUserData.lastResetDate ? new Date(persistentUserData.lastResetDate) : new Date(0);
-        const todayDate = new Date();
-        const diffTime = Math.abs(todayDate - lastDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const today = new Date();
+    const todayString = today.toDateString();
 
-        if (diffDays > 1) {
-            const dayOfWeek = todayDate.getDay();
-            const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
-            if (persistentUserData.weeklyProgress[dayIndex].p > 0) {
-                 persistentUserData.weeklyProgress[dayIndex].p = 0;
-            }
+    if (persistentUserData.lastResetDate !== todayString) {
+        const lastDate = persistentUserData.lastResetDate ? new Date(persistentUserData.lastResetDate) : new Date(0);
+        
+        const isMonday = today.getDay() === 1;
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        if (isMonday && lastDate.toDateString() !== yesterday.toDateString()) {
+             persistentUserData.weeklyProgress = [...defaultState.persistentUserData.weeklyProgress];
         }
         
-        persistentUserData.lastResetDate = today;
+        persistentUserData.lastResetDate = todayString;
         localStorage.setItem('persistentUserData', JSON.stringify(persistentUserData));
-        localStorage.removeItem(getTodayKey());
     }
 
-    const dailyUserData = JSON.parse(localStorage.getItem(getTodayKey())) || defaultState.dailyUserData;
+    const dailyUserData = JSON.parse(localStorage.getItem(getTodayKey())) || { ...defaultState.dailyUserData };
 
     return { settings, persistentUserData, dailyUserData };
 }
