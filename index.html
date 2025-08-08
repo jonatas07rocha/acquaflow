@@ -4,62 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acqua - Sua Hidratação Diária</title>
+    
+    <!-- Bibliotecas Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- SortableJS for Drag & Drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    
+    <!-- Fontes e Estilos -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --color-from: theme('colors.teal.900');
-            --color-via: theme('colors.cyan.900');
-            --color-to: theme('colors.emerald.900');
-            --color-accent: theme('colors.teal.400');
-            --color-accent-light: theme('colors.teal.300');
-            --color-accent-dark: theme('colors.teal.500');
-            --color-accent-gradient-from: theme('colors.teal.300');
-            --color-accent-gradient-to: theme('colors.cyan.400');
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-image: linear-gradient(to bottom right, var(--color-from), var(--color-via), var(--color-to));
-        }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.1);
-            -webkit-backdrop-filter: blur(15px);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: background 0.3s ease;
-        }
-        .progress-ring__circle { stroke: var(--color-accent); transition: stroke-dashoffset 0.7s ease-in-out, stroke 0.5s ease; transform: rotate(-90deg); transform-origin: 50% 50%; }
-        .main-add-button { 
-            background-color: var(--color-accent); 
-            box-shadow: 0 4px 20px color-mix(in srgb, var(--color-accent) 40%, transparent); 
-            transition: all 0.3s ease; 
-        }
-        .main-add-button:hover { transform: translateY(-2px); box-shadow: 0 6px 25px color-mix(in srgb, var(--color-accent) 50%, transparent); }
-        .chart-bar-fill { background-color: var(--color-accent); transition: height 1s ease-in-out, background-color 0.5s ease; }
-        .animate-on-scroll { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
-        .animate-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
-        
-        /* Drag & Drop Styles */
-        .drag-handle { display: none; cursor: grab; position: absolute; top: 16px; right: 16px; opacity: 0.5; }
-        .reorder-mode .widget .drag-handle { display: block; }
-        .reorder-mode .widget { border: 2px dashed rgba(255,255,255,0.3); }
-        .sortable-ghost { opacity: 0.4; }
-        .sortable-chosen { border-style: solid; }
-
-        /* Toggle Switch */
-        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .4s; border-radius: 28px; }
-        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--color-accent); }
-        input:checked + .slider:before { transform: translateX(22px); }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#134e4a">
 </head>
 <body class="text-white min-h-screen">
 
@@ -71,172 +30,22 @@
                 <div class="text-xl font-bold">Seu Dashboard</div>
             </div>
             <div id="reorder-button-container" class="hidden">
-                 <button onclick="saveLayout()" class="main-add-button text-white font-bold py-2 px-4 rounded-full flex items-center">
+                 <button id="save-layout-btn" class="main-add-button text-white font-bold py-2 px-4 rounded-full flex items-center">
                     <i data-lucide="check" class="w-4 h-4 mr-1"></i> Salvar Ordem
                  </button>
             </div>
-            <div onclick="showSettingsModal()" id="settings-button" class="glass-panel rounded-full p-2.5 cursor-pointer hover:bg-white/20 transition-colors">
+            <div id="settings-button" class="glass-panel rounded-full p-2.5 cursor-pointer hover:bg-white/20 transition-colors">
                 <i data-lucide="settings" class="w-5 h-5"></i>
             </div>
         </header>
 
         <div id="widget-container">
-            <!-- Widgets serão inseridos aqui pelo JavaScript na ordem correta -->
+            <!-- Widgets serão inseridos aqui pelo JavaScript -->
         </div>
     </div>
     
-    <!-- MODAIS -->
-    <div id="add-water-modal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center hidden z-50">
-        <div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-xs text-center"><h2 class="text-xl font-bold mb-4">Adicionar Água</h2><p class="text-sm opacity-80 mb-4">Digite a quantidade em ml.</p><input type="number" id="custom-amount" class="w-full border-2 border-white/20 bg-white/10 rounded-lg p-3 text-center text-2xl text-white" placeholder="250"><div class="flex gap-3 mt-6"><button onclick="hideAddWaterModal()" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors">Cancelar</button><button onclick="addCustomWater()" class="w-full bg-teal-500 text-white font-semibold py-3 rounded-lg hover:bg-teal-600 transition-colors">Confirmar</button></div></div>
-    </div>
+    <!-- Modais serão inseridos aqui pelo JavaScript -->
 
-    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center hidden z-50">
-        <div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-sm text-left"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold">Configurações</h2><button onclick="hideSettingsModal()" class="p-1 rounded-full hover:bg-white/20"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="space-y-6"><div><button onclick="enterReorderMode()" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"><i data-lucide="move" class="w-4 h-4 mr-2"></i>Reorganizar Widgets</button></div><div class="flex justify-between items-center"><div><label for="goal-input" class="font-semibold">Meta Diária (ml)</label><p class="text-xs opacity-70">Defina seu objetivo de hidratação.</p></div><input type="number" id="goal-input" class="w-24 bg-white/10 border-2 border-white/20 rounded-lg p-2 text-center"></div><div class="flex justify-between items-center"><div><h3 class="font-semibold">Lembretes</h3><p class="text-xs opacity-70">Receber notificações para beber água.</p></div><label class="switch"><input type="checkbox" id="reminders-toggle"><span class="slider"></span></label></div><div><h3 class="font-semibold mb-2">Tema</h3><div class="flex gap-4" id="theme-selector"></div></div></div><button onclick="saveSettings()" class="w-full main-add-button text-white font-bold py-3 mt-8 rounded-lg">Salvar e Fechar</button></div>
-    </div>
-
-    <script>
-        const defaultState = {
-            settings: { dailyGoal: 2500, reminders: false, theme: 'teal', widgetOrder: ['progress', 'stats', 'history', 'weekly', 'achievements', 'tip'] },
-            userData: {}
-        };
-        const themes = {
-            teal: { name: 'Verde-Água', from: '#134e4a', via: '#164e63', to: '#064e3b', accent: '#5eead4', accentLight: '#a7f3d0', accentDark: '#14b8a6', gradientFrom: '#5eead4', gradientTo: '#22d3ee' },
-            blue: { name: 'Azul Cósmico', from: '#1e1b4b', via: '#1e3a8a', to: '#312e81', accent: '#60a5fa', accentLight: '#93c5fd', accentDark: '#3b82f6', gradientFrom: '#60a5fa', gradientTo: '#38bdf8' },
-            purple: { name: 'Púrpura Neon', from: '#3b0764', via: '#581c87', to: '#4a044e', accent: '#c084fc', accentLight: '#d8b4fe', accentDark: '#a855f7', gradientFrom: '#c084fc', gradientTo: '#f472b6' }
-        };
-        let state;
-        let sortableInstance = null;
-
-        const UIElements = {
-            body: document.body,
-            dateHeader: document.getElementById('date-header'),
-            widgetContainer: document.getElementById('widget-container'),
-            reorderButtonContainer: document.getElementById('reorder-button-container'),
-            settingsButton: document.getElementById('settings-button'),
-            addWaterModal: document.getElementById('add-water-modal'),
-            customAmountInput: document.getElementById('custom-amount'),
-            settingsModal: document.getElementById('settings-modal'),
-            goalInput: document.getElementById('goal-input'),
-            remindersToggle: document.getElementById('reminders-toggle'),
-            themeSelector: document.getElementById('theme-selector'),
-        };
-
-        function getTodayKey() { const today = new Date(); return `userData_${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`; }
-        function loadState() {
-            const settings = JSON.parse(localStorage.getItem('settings')) || defaultState.settings;
-            if (!settings.widgetOrder) settings.widgetOrder = defaultState.settings.widgetOrder; // Garante compatibilidade
-            const todayKey = getTodayKey();
-            const userData = JSON.parse(localStorage.getItem(todayKey)) || { currentAmount: 0, history: [], weeklyProgress: [ { day: 'S', p: 0 }, { day: 'T', p: 0 }, { day: 'Q', p: 0 }, { day: 'Q', p: 0 }, { day: 'S', p: 0 }, { day: 'S', p: 0 }, { day: 'D', p: 0 } ], achievements: [ { id: 'dias3', n: '3 Dias', u: false }, { id: 'meta5', n: '5 Metas', u: false }, { id: 'perfeito', n: 'Perfeito', u: false }, { id: 'madrugador', n: 'Madrugador', u: false }, { id: 'noturno', n: 'Noturno', u: false }, { id: 'super', n: 'Super Litro', u: false }, { id: 'dobro', n: 'Meta em Dobro', u: false }, { id: 'semana', n: '1 Semana', u: false } ] };
-            state = { settings, userData };
-        }
-        function saveState() { localStorage.setItem('settings', JSON.stringify(state.settings)); localStorage.setItem(getTodayKey(), JSON.stringify(state.userData)); }
-
-        function addWater(amount) { if (amount <= 0) return; state.userData.currentAmount += amount; const now = new Date(); const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0'); state.userData.history.unshift({ amount, time }); updateUI(); saveState(); }
-        function addCustomWater() { const amount = parseInt(UIElements.customAmountInput.value, 10); if (!isNaN(amount) && amount > 0) { addWater(amount); hideAddWaterModal(); } }
-
-        function saveSettings() { const newGoal = parseInt(UIElements.goalInput.value, 10); if (!isNaN(newGoal) && newGoal > 0) { state.settings.dailyGoal = newGoal; } state.settings.reminders = UIElements.remindersToggle.checked; saveState(); updateUI(); hideSettingsModal(); }
-        function applyTheme(themeName) { const theme = themes[themeName]; if (!theme) return; const root = document.documentElement; Object.keys(theme).forEach(key => { if (key !== 'name') { const cssVar = `--color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`; root.style.setProperty(cssVar, theme[key]); } }); }
-
-        const widgetTemplates = {
-            progress: () => `<section data-widget-id="progress" class="widget glass-panel rounded-3xl p-6 my-4 flex flex-col items-center animate-on-scroll"><i data-lucide="grip-vertical" class="drag-handle"></i><div class="relative w-56 h-56"><svg class="w-full h-full" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="12"/><circle id="progress-circle" class="progress-ring__circle" cx="60" cy="60" r="54" fill="none" stroke-width="12" stroke-linecap="round"/></svg><div class="absolute inset-0 flex flex-col items-center justify-center text-center"><div id="current-amount-text" class="text-5xl font-bold"></div><div class="text-lg font-light -mt-1">ml</div><div id="percentage-text" class="text-sm opacity-80 mt-2"></div></div></div><button onclick="showAddWaterModal()" class="main-add-button text-white font-bold py-4 w-full mt-6 rounded-full flex items-center justify-center mx-auto"><i data-lucide="droplet" class="w-5 h-5 mr-2"></i>Adicionar Água</button></section>`,
-            stats: () => `<div data-widget-id="stats" class="widget grid grid-cols-2 gap-4 mb-4 animate-on-scroll"><i data-lucide="grip-vertical" class="drag-handle"></i><div class="glass-panel rounded-2xl p-4 flex items-center"><div class="p-3 rounded-full mr-4 bg-[color-mix(in_srgb,var(--color-accent)_30%,transparent)]"><i data-lucide="target" class="w-5 h-5 text-[var(--color-accent-light)]"></i></div><div><div class="text-xs opacity-70">Meta Diária</div><div id="goal-text" class="text-lg font-semibold"></div></div></div><div class="glass-panel rounded-2xl p-4 flex items-center"><div class="p-3 rounded-full mr-4 bg-[color-mix(in_srgb,var(--color-accent)_30%,transparent)]"><i data-lucide="hourglass" class="w-5 h-5 text-[var(--color-accent-light)]"></i></div><div><div class="text-xs opacity-70">Restante</div><div id="remaining-text" class="text-lg font-semibold"></div></div></div></div>`,
-            history: () => `<section data-widget-id="history" class="widget glass-panel rounded-2xl p-4 mb-4 animate-on-scroll relative"><i data-lucide="grip-vertical" class="drag-handle"></i><div class="flex items-center mb-3"><div class="p-2 rounded-full mr-3 bg-[color-mix(in_srgb,var(--color-accent)_30%,transparent)]"><i data-lucide="history" class="w-4 h-4 text-[var(--color-accent-light)]"></i></div><h2 class="font-semibold">Histórico do Dia</h2></div><div id="history-list" class="space-y-2 max-h-40 overflow-y-auto pr-2"></div></section>`,
-            weekly: () => `<section data-widget-id="weekly" class="widget glass-panel rounded-2xl p-4 mb-4 animate-on-scroll relative"><i data-lucide="grip-vertical" class="drag-handle"></i><div class="flex items-center mb-4"><div class="p-2 rounded-full mr-3 bg-[color-mix(in_srgb,var(--color-accent)_30%,transparent)]"><i data-lucide="bar-chart-2" class="w-4 h-4 text-[var(--color-accent-light)]"></i></div><h2 class="font-semibold">Progresso Semanal</h2></div><div id="weekly-chart" class="flex justify-between items-end h-32 px-2"></div></section>`,
-            achievements: () => `<section data-widget-id="achievements" class="widget glass-panel rounded-2xl p-4 mb-4 animate-on-scroll relative"><i data-lucide="grip-vertical" class="drag-handle"></i><div class="flex items-center mb-4"><div class="p-2 rounded-full mr-3 bg-amber-500/30"><i data-lucide="award" class="w-4 h-4 text-amber-300"></i></div><h2 class="font-semibold">Conquistas</h2></div><div id="achievements-grid" class="grid grid-cols-4 gap-4 text-center"></div></section>`,
-            tip: () => `<section data-widget-id="tip" class="widget glass-panel rounded-2xl p-4 mb-4 animate-on-scroll relative"><i data-lucide="grip-vertical" class="drag-handle"></i><div class="flex items-center mb-2"><div class="p-2 rounded-full mr-3 bg-lime-500/30"><i data-lucide="lightbulb" class="w-4 h-4 text-lime-300"></i></div><h2 class="font-semibold">Dica do Dia</h2></div><p class="text-sm opacity-80">Leve uma garrafa de água com você. Ter água sempre à mão serve como um lembrete constante para se hidratar ao longo do dia.</p></section>`
-        };
-        
-        function renderDashboard() {
-            UIElements.widgetContainer.innerHTML = '';
-            state.settings.widgetOrder.forEach(widgetId => {
-                if(widgetTemplates[widgetId]) {
-                    UIElements.widgetContainer.innerHTML += widgetTemplates[widgetId]();
-                }
-            });
-            updateUI();
-        }
-
-        function updateUI() {
-            const { settings, userData } = state;
-            const percentage = Math.min((userData.currentAmount / settings.dailyGoal) * 100, 100);
-            const remaining = Math.max(settings.dailyGoal - userData.currentAmount, 0);
-
-            const progressCircle = document.getElementById('progress-circle');
-            if (progressCircle) {
-                const radius = progressCircle.r.baseVal.value;
-                const circumference = radius * 2 * Math.PI;
-                progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
-                progressCircle.style.strokeDashoffset = circumference - (percentage / 100) * circumference;
-                document.getElementById('current-amount-text').textContent = userData.currentAmount;
-                document.getElementById('percentage-text').textContent = `${Math.round(percentage)}%`;
-            }
-            
-            const goalText = document.getElementById('goal-text');
-            if(goalText) goalText.textContent = `${settings.dailyGoal} ml`;
-            const remainingText = document.getElementById('remaining-text');
-            if(remainingText) remainingText.textContent = `${remaining} ml`;
-            
-            applyTheme(settings.theme);
-            
-            const historyList = document.getElementById('history-list');
-            if (historyList) historyList.innerHTML = userData.history.map(item => `<div class="glass-panel rounded-lg p-3 flex justify-between items-center text-sm hover:bg-white/20"><div class="flex items-center"><i data-lucide="droplet" class="w-4 h-4 mr-3 text-[var(--color-accent-light)]"></i><span class="font-semibold">+ ${item.amount} ml</span></div><span class="text-xs opacity-70">${item.time}</span></div>`).join('');
-            
-            const weeklyChart = document.getElementById('weekly-chart');
-            if(weeklyChart) weeklyChart.innerHTML = userData.weeklyProgress.map(day => `<div class="flex flex-col items-center w-8"><div class="w-full h-full flex items-end"><div class="chart-bar-fill w-full rounded-t-sm" style="height: ${day.p}%"></div></div><span class="text-xs opacity-70 mt-1">${day.day}</span></div>`).join('');
-            
-            const achievementsGrid = document.getElementById('achievements-grid');
-            if(achievementsGrid) achievementsGrid.innerHTML = userData.achievements.map(ach => `<div class="flex flex-col items-center"><div class="w-12 h-12 rounded-full flex items-center justify-center ${ach.u ? 'bg-amber-500/30' : 'bg-gray-500/20'}"><i data-lucide="${ach.u ? 'award' : 'lock'}" class="w-6 h-6 ${ach.u ? 'text-amber-300' : 'text-gray-400'}"></i></div><span class="text-xs mt-1 opacity-80">${ach.n}</span></div>`).join('');
-            
-            lucide.createIcons();
-            setupScrollAnimations();
-        }
-        
-        function renderThemeSelector() { UIElements.themeSelector.innerHTML = Object.keys(themes).map(key => `<div onclick="selectTheme('${key}')" class="cursor-pointer"><div id="theme-${key}" class="w-10 h-10 rounded-full border-2" style="background: linear-gradient(135deg, ${themes[key].gradientFrom}, ${themes[key].gradientTo});"></div><p class="text-xs text-center mt-1">${themes[key].name}</p></div>`).join('');}
-        function selectTheme(themeName) { state.settings.theme = themeName; applyTheme(themeName); updateThemeSelectionUI(); saveState(); }
-        function updateThemeSelectionUI() { document.querySelectorAll('[id^="theme-"]').forEach(el => el.classList.remove('border-white')); document.getElementById(`theme-${state.settings.theme}`).classList.add('border-white'); }
-
-        function showAddWaterModal() { UIElements.addWaterModal.classList.remove('hidden'); UIElements.customAmountInput.focus(); }
-        function hideAddWaterModal() { UIElements.addWaterModal.classList.add('hidden'); }
-        function showSettingsModal() { UIElements.goalInput.value = state.settings.dailyGoal; UIElements.remindersToggle.checked = state.settings.reminders; updateThemeSelectionUI(); UIElements.settingsModal.classList.remove('hidden'); }
-        function hideSettingsModal() { UIElements.settingsModal.classList.add('hidden'); }
-
-        function enterReorderMode() {
-            hideSettingsModal();
-            UIElements.body.classList.add('reorder-mode');
-            UIElements.reorderButtonContainer.classList.remove('hidden');
-            UIElements.settingsButton.classList.add('hidden');
-            if (sortableInstance) sortableInstance.destroy();
-            sortableInstance = new Sortable(UIElements.widgetContainer, {
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                handle: '.drag-handle',
-            });
-        }
-        function saveLayout() {
-            const newOrder = [...UIElements.widgetContainer.children].map(el => el.dataset.widgetId);
-            state.settings.widgetOrder = newOrder;
-            saveState();
-            
-            UIElements.body.classList.remove('reorder-mode');
-            UIElements.reorderButtonContainer.classList.add('hidden');
-            UIElements.settingsButton.classList.remove('hidden');
-            if (sortableInstance) {
-                sortableInstance.destroy();
-                sortableInstance = null;
-            }
-            renderDashboard(); // Re-render para garantir a ordem e remover classes de reordenação
-        }
-
-        function setupScrollAnimations() { const animatedElements = document.querySelectorAll('.animate-on-scroll'); const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); } }); }, { threshold: 0.1 }); animatedElements.forEach(el => { observer.observe(el); }); }
-
-        window.onload = () => {
-            const today = new Date();
-            UIElements.dateHeader.textContent = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-            loadState();
-            renderThemeSelector();
-            renderDashboard();
-        };
-    </script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
