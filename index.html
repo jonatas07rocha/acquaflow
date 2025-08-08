@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acqua - Sua Hidratação Diária</title>
     
+    <!-- Bibliotecas Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     
+    <!-- Fontes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
     
+    <!-- Arquivos Locais -->
+    <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#134e4a">
 </head>
@@ -21,7 +24,7 @@
 
     <div id="app-container" class="container mx-auto max-w-sm p-4">
         
-        <header class="flex justify-between items-center py-6 animate-on-scroll">
+        <header class="flex justify-between items-center py-6">
             <div>
                 <div id="date-header" class="text-sm opacity-70"></div>
                 <div class="text-xl font-bold">Seu Dashboard</div>
@@ -31,7 +34,6 @@
                     <i data-lucide="check" class="w-4 h-4 mr-1"></i> Salvar Ordem
                  </button>
             </div>
-            <!-- --- CORREÇÃO APLICADA AQUI --- -->
             <div data-action="showSettings" id="settings-button" class="glass-panel rounded-full p-2.5 cursor-pointer hover:bg-white/20 transition-colors">
                 <i data-lucide="settings" class="w-5 h-5"></i>
             </div>
@@ -44,6 +46,7 @@
     
     <!-- Modais serão inseridos aqui pelo JavaScript -->
 
+    <!-- Ponto de entrada da aplicação -->
     <script type="module" src="main.js"></script>
 </body>
 </html>
