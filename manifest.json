@@ -1,18 +1,12 @@
 {
   "name": "Acqua Flow",
-  "short_name": "AcquaFlow",
-  "description": "Seu aplicativo de hidratação para nunca mais esquecer de beber água.",
+  "short_name": "Acqua Flow",
+  "description": "Seu dashboard pessoal para monitorar a hidratação diária.",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#01579B",
-  "theme_color": "#01579B",
+  "background_color": "#0c2b28",
+  "theme_color": "#134e4a",
   "icons": [
-    {
-      "src": "icons/icon-180x180.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
     {
       "src": "icons/icon-192x192.png",
       "sizes": "192x192",
