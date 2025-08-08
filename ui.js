@@ -13,9 +13,9 @@ const widgetTemplates = {
                     <circle id="progress-circle" class="progress-ring__circle" cx="60" cy="60" r="54" fill="none" stroke-width="12" stroke-linecap="round"/>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <div id="current-amount-text" class="text-5xl font-bold">${state.userData.currentAmount}</div>
+                    <div id="current-amount-text" class="text-5xl font-bold">${state.dailyUserData.currentAmount}</div>
                     <div class="text-lg font-light -mt-1">ml</div>
-                    <div id="percentage-text" class="text-sm opacity-80 mt-2">${Math.round((state.userData.currentAmount / state.settings.dailyGoal) * 100)}%</div>
+                    <div id="percentage-text" class="text-sm opacity-80 mt-2">${Math.round((state.dailyUserData.currentAmount / state.settings.dailyGoal) * 100)}%</div>
                 </div>
             </div>
             <button data-action="showAddWater" class="main-add-button text-white font-bold py-4 w-full mt-6 rounded-full flex items-center justify-center mx-auto">
@@ -40,7 +40,7 @@ const widgetTemplates = {
                 </div>
                 <div>
                     <div class="text-xs opacity-70">Restante</div>
-                    <div id="remaining-text" class="text-lg font-semibold">${Math.max(0, state.settings.dailyGoal - state.userData.currentAmount)} ml</div>
+                    <div id="remaining-text" class="text-lg font-semibold">${Math.max(0, state.settings.dailyGoal - state.dailyUserData.currentAmount)} ml</div>
                 </div>
             </div>
         </div>`,
@@ -54,14 +54,14 @@ const widgetTemplates = {
                 <h2 class="font-semibold">Histórico do Dia</h2>
             </div>
             <div id="history-list" class="space-y-2 max-h-40 overflow-y-auto pr-2">
-                ${state.userData.history.map(item => `
+                ${state.dailyUserData.history.map(item => `
                     <div class="glass-panel rounded-lg p-3 flex justify-between items-center text-sm hover:bg-white/20">
                         <div class="flex items-center">
                             <i data-lucide="droplet" class="w-4 h-4 mr-3 text-[var(--color-accent-light)]"></i>
                             <span class="font-semibold">+ ${item.amount} ml</span>
                         </div>
                         <span class="text-xs opacity-70">${item.time}</span>
-                    </div>`).join('') || '<p class="text-sm text-center opacity-60 py-4">Nenhum registro hoje.</p>'}
+                    </div>`).join('') || '<p class="text-sm text-center opacity-60 py-4">Nenhum registo hoje.</p>'}
             </div>
         </section>`,
     weekly: (state) => `
@@ -74,7 +74,7 @@ const widgetTemplates = {
                 <h2 class="font-semibold">Progresso Semanal</h2>
             </div>
             <div id="weekly-chart" class="flex justify-between items-end h-32 px-2">
-                ${state.userData.weeklyProgress.map(day => `
+                ${state.persistentUserData.weeklyProgress.map(day => `
                     <div class="flex flex-col items-center w-8">
                         <div class="w-full h-full flex items-end">
                             <div class="chart-bar-fill w-full rounded-t-sm" style="height: ${day.p}%"></div>
@@ -93,7 +93,7 @@ const widgetTemplates = {
                 <h2 class="font-semibold">Conquistas</h2>
             </div>
             <div id="achievements-grid" class="grid grid-cols-4 gap-4 text-center">
-                ${state.userData.achievements.map(ach => `
+                ${state.persistentUserData.achievements.map(ach => `
                     <div class="flex flex-col items-center">
                         <div class="w-12 h-12 rounded-full flex items-center justify-center ${ach.u ? 'bg-amber-500/30' : 'bg-gray-500/20'}">
                             <i data-lucide="${ach.u ? 'award' : 'lock'}" class="w-6 h-6 ${ach.u ? 'text-amber-300' : 'text-gray-400'}"></i>
@@ -111,7 +111,7 @@ const widgetTemplates = {
                 </div>
                 <h2 class="font-semibold">Dica do Dia</h2>
             </div>
-            <p class="text-sm opacity-80">Leve uma garrafa de água com você. Ter água sempre à mão serve como um lembrete constante para se hidratar ao longo do dia.</p>
+            <p class="text-sm opacity-80">Leve uma garrafa de água consigo. Ter água sempre à mão serve como um lembrete constante para se hidratar ao longo do dia.</p>
         </section>`
 };
 
@@ -138,7 +138,7 @@ const modalTemplates = {
                 <div class="space-y-6">
                     <div><button data-action="enterReorderMode" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"><i data-lucide="move" class="w-4 h-4 mr-2"></i>Reorganizar Widgets</button></div>
                     <div class="flex justify-between items-center">
-                        <div><label for="goal-input" class="font-semibold">Meta Diária (ml)</label><p class="text-xs opacity-70">Defina seu objetivo de hidratação.</p></div>
+                        <div><label for="goal-input" class="font-semibold">Meta Diária (ml)</label><p class="text-xs opacity-70">Defina o seu objetivo de hidratação.</p></div>
                         <input type="number" id="goal-input" class="w-24 bg-white/10 border-2 border-white/20 rounded-lg p-2 text-center" value="${state.settings.dailyGoal}">
                     </div>
                     <div class="flex justify-between items-center">
@@ -164,8 +164,15 @@ const modalTemplates = {
 export function renderDashboard() {
     const state = loadState();
     const container = document.getElementById('widget-container');
+    const header = document.getElementById('date-header');
+    
+    if (!container || !header) return;
+
     container.innerHTML = '';
     
+    const today = new Date();
+    header.textContent = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+
     applyTheme(state.settings.theme);
     
     state.settings.widgetOrder.forEach(widgetId => {
@@ -184,7 +191,7 @@ function updateProgressCircle(state) {
     if (!progressCircle) return;
     const radius = progressCircle.r.baseVal.value;
     const circumference = radius * 2 * Math.PI;
-    const percentage = Math.min((state.userData.currentAmount / state.settings.dailyGoal) * 100, 100);
+    const percentage = Math.min((state.dailyUserData.currentAmount / state.settings.dailyGoal) * 100, 100);
     progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
     progressCircle.style.strokeDashoffset = circumference - (percentage / 100) * circumference;
 }
