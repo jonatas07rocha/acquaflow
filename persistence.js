@@ -1,4 +1,4 @@
-const defaultState = {
+export const defaultState = {
     settings: {
         dailyGoal: 2500,
         reminders: false,
@@ -30,38 +30,51 @@ function getTodayKey() {
 }
 
 export function loadState() {
-    const settings = JSON.parse(localStorage.getItem('settings')) || { ...defaultState.settings };
-    if (!settings.widgetOrder) {
-        settings.widgetOrder = defaultState.settings.widgetOrder;
-    }
-
-    let persistentUserData = JSON.parse(localStorage.getItem('persistentUserData')) || { ...defaultState.persistentUserData };
-    
-    const today = new Date();
-    const todayString = today.toDateString();
-
-    if (persistentUserData.lastResetDate !== todayString) {
-        const lastDate = persistentUserData.lastResetDate ? new Date(persistentUserData.lastResetDate) : new Date(0);
-        
-        const isMonday = today.getDay() === 1;
-        const yesterday = new Date();
-        yesterday.setDate(today.getDate() - 1);
-
-        if (isMonday && lastDate.toDateString() !== yesterday.toDateString()) {
-             persistentUserData.weeklyProgress = [...defaultState.persistentUserData.weeklyProgress];
+    try {
+        const settings = JSON.parse(localStorage.getItem('settings')) || defaultState.settings;
+        if (!settings.widgetOrder || settings.widgetOrder.length === 0) {
+            settings.widgetOrder = defaultState.settings.widgetOrder;
         }
+
+        let persistentUserData = JSON.parse(localStorage.getItem('persistentUserData')) || defaultState.persistentUserData;
         
-        persistentUserData.lastResetDate = todayString;
-        localStorage.setItem('persistentUserData', JSON.stringify(persistentUserData));
+        const today = new Date();
+        const todayString = today.toDateString();
+
+        if (persistentUserData.lastResetDate !== todayString) {
+            const lastDate = persistentUserData.lastResetDate ? new Date(persistentUserData.lastResetDate) : new Date(0);
+            
+            const isMonday = today.getDay() === 1;
+            const yesterday = new Date();
+            yesterday.setDate(today.getDate() - 1);
+
+            if (isMonday && lastDate.toDateString() !== yesterday.toDateString()) {
+                 persistentUserData.weeklyProgress = defaultState.persistentUserData.weeklyProgress;
+            }
+            
+            persistentUserData.lastResetDate = todayString;
+        }
+
+        const dailyUserData = JSON.parse(localStorage.getItem(getTodayKey())) || defaultState.dailyUserData;
+
+        return { 
+            settings: { ...defaultState.settings, ...settings },
+            persistentUserData: { ...defaultState.persistentUserData, ...persistentUserData },
+            dailyUserData: { ...defaultState.dailyUserData, ...dailyUserData }
+        };
+    } catch (e) {
+        console.error("Erro ao carregar o estado, usando valores padrão.", e);
+        localStorage.clear();
+        return JSON.parse(JSON.stringify(defaultState)); // Retorna uma cópia profunda
     }
-
-    const dailyUserData = JSON.parse(localStorage.getItem(getTodayKey())) || { ...defaultState.dailyUserData };
-
-    return { settings, persistentUserData, dailyUserData };
 }
 
 export function saveState(state) {
-    localStorage.setItem('settings', JSON.stringify(state.settings));
-    localStorage.setItem('persistentUserData', JSON.stringify(state.persistentUserData));
-    localStorage.setItem(getTodayKey(), JSON.stringify(state.dailyUserData));
+    try {
+        localStorage.setItem('settings', JSON.stringify(state.settings));
+        localStorage.setItem('persistentUserData', JSON.stringify(state.persistentUserData));
+        localStorage.setItem(getTodayKey(), JSON.stringify(state.dailyUserData));
+    } catch (e) {
+        console.error("Erro ao salvar o estado:", e);
+    }
 }
