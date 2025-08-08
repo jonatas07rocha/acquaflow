@@ -1,28 +1,35 @@
 export const themes = {
-    // ... (seu tema acqua_glass_light existente) ...
-
-    acqua_vibrant: {
-        name: 'Acqua Vibrante',
-        '--color-bg-main': 'linear-gradient(-45deg, #03A9F4, #01579B, #0277BD, #4FC3F7)',
-        '--color-text-base': '#FFFFFF',
-        '--color-text-muted': 'rgba(230, 240, 255, 0.8)',
-        
-        // Cores de Destaque
-        '--color-primary': '#A7F3D0',
-        '--color-accent': '#34D399',
-        // --- ADICIONAR ESTAS DUAS LINHAS ---
-        '--color-primary-rgb': '167, 243, 208', // RGB correspondente a #A7F3D0
-        '--color-accent-rgb': '52, 211, 153',   // RGB correspondente a #34D399
-
-        // Refinamento do Glassmorphism
-        '--glass-bg': 'rgba(255, 255, 255, 0.08)',
-        '--glass-backdrop-filter': 'blur(24px)',
-        '--glass-border': '1px solid rgba(255, 255, 255, 0.1)',
-        '--glass-shadow': '0 4px 20px 0 rgba(0, 0, 0, 0.2)',
-
-        // Botões
-        '--btn-primary-bg': 'linear-gradient(45deg, var(--color-accent), var(--color-primary))',
-        '--btn-primary-text': '#003d5b',
+    teal: { 
+        name: 'Verde-Água', 
+        from: '#134e4a', 
+        via: '#164e63', 
+        to: '#064e3b', 
+        accent: '#5eead4', 
+        accentLight: '#a7f3d0', 
+        accentDark: '#14b8a6', 
+        gradientFrom: '#5eead4', 
+        gradientTo: '#22d3ee' 
+    },
+    blue: { 
+        name: 'Azul Cósmico', 
+        from: '#1e1b4b', 
+        via: '#1e3a8a', 
+        to: '#312e81', 
+        accent: '#60a5fa', 
+        accentLight: '#93c5fd', 
+        accentDark: '#3b82f6', 
+        gradientFrom: '#60a5fa', 
+        gradientTo: '#38bdf8' 
+    },
+    purple: { 
+        name: 'Púrpura Neon', 
+        from: '#3b0764', 
+        via: '#581c87', 
+        to: '#4a044e', 
+        accent: '#c084fc', 
+        accentLight: '#d8b4fe', 
+        accentDark: '#a855f7', 
+        gradientFrom: '#c084fc', 
+        gradientTo: '#f472b6' 
     }
 };
-
