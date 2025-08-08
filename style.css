@@ -9,6 +9,7 @@
 body {
     font-family: 'Inter', sans-serif;
     background-image: linear-gradient(to bottom right, var(--color-from), var(--color-via), var(--color-to));
+    transition: background-image 0.5s ease;
 }
 .glass-panel {
     background: rgba(255, 255, 255, 0.1);
