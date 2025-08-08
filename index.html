@@ -5,18 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acqua - Sua Hidratação Diária</title>
     
-    <!-- Bibliotecas Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     
-    <!-- Fontes e Estilos -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
-    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#134e4a">
 </head>
@@ -30,11 +27,12 @@
                 <div class="text-xl font-bold">Seu Dashboard</div>
             </div>
             <div id="reorder-button-container" class="hidden">
-                 <button id="save-layout-btn" class="main-add-button text-white font-bold py-2 px-4 rounded-full flex items-center">
+                 <button data-action="saveLayout" class="main-add-button text-white font-bold py-2 px-4 rounded-full flex items-center">
                     <i data-lucide="check" class="w-4 h-4 mr-1"></i> Salvar Ordem
                  </button>
             </div>
-            <div id="settings-button" class="glass-panel rounded-full p-2.5 cursor-pointer hover:bg-white/20 transition-colors">
+            <!-- --- CORREÇÃO APLICADA AQUI --- -->
+            <div data-action="showSettings" id="settings-button" class="glass-panel rounded-full p-2.5 cursor-pointer hover:bg-white/20 transition-colors">
                 <i data-lucide="settings" class="w-5 h-5"></i>
             </div>
         </header>
