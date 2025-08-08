@@ -1,19 +1,21 @@
-import { updateState } from './state.js';
+import { getState, updateState } from './state.js';
 import { renderDashboard, showAddWaterModal, showSettingsModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
 
 function addWater(amount) {
     if (amount <= 0 || isNaN(amount)) return;
 
-    // A lógica de manipulação do estado foi movida para o módulo 'state'
-    // Aqui, apenas disparamos a atualização.
     const state = getState();
     const newAmount = state.dailyUserData.currentAmount + amount;
+    
     const now = new Date();
     const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
     const newHistory = [{ amount, time }, ...state.dailyUserData.history];
+
     const dayOfWeek = now.getDay();
     const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
     const dailyPercentage = Math.min(Math.round((newAmount / state.settings.dailyGoal) * 100), 100);
+    
     const newWeeklyProgress = [...state.persistentUserData.weeklyProgress];
     newWeeklyProgress[dayIndex].p = dailyPercentage;
 
@@ -44,6 +46,15 @@ function handleReminderToggle(event) {
     }
 }
 
+function confirmAddWater() {
+    const amountInput = document.getElementById('custom-amount');
+    if (amountInput && amountInput.value) {
+        const amount = parseInt(amountInput.value, 10);
+        addWater(amount);
+    }
+    closeAllModals();
+}
+
 function setupEventListeners() {
     document.body.addEventListener('click', (event) => {
         const targetElement = event.target.closest('[data-action]');
@@ -56,12 +67,7 @@ function setupEventListeners() {
             case 'saveLayout': saveLayout(); break;
             case 'showAddWater': showAddWaterModal(); break;
             case 'addCustomWater':
-                const amountInput = document.getElementById('custom-amount');
-                if (amountInput && amountInput.value) {
-                    const amount = parseInt(amountInput.value, 10);
-                    addWater(amount);
-                }
-                closeAllModals();
+                confirmAddWater();
                 break;
             case 'closeModal':
                 closeAllModals();
@@ -100,6 +106,17 @@ function setupEventListeners() {
     document.body.addEventListener('change', (event) => {
         if (event.target.id === 'reminders-toggle') {
             handleReminderToggle(event);
+        }
+    });
+
+    // --- CORREÇÃO APLICADA AQUI ---
+    // Adiciona um listener para a tecla "Enter" no modal
+    document.body.addEventListener('keyup', (event) => {
+        const amountInput = document.getElementById('custom-amount');
+        // Garante que o evento só ocorra se o input do modal estiver em foco
+        if (amountInput && event.target === amountInput && event.key === 'Enter') {
+            event.preventDefault(); // Previne qualquer comportamento padrão do Enter
+            confirmAddWater();
         }
     });
 }
