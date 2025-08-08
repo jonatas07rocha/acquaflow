@@ -12,7 +12,7 @@ function addWater(amount) {
     state.dailyUserData.history.unshift({ amount, time });
 
     const dayOfWeek = now.getDay();
-    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1; // Ajusta para o array que começa na Segunda (0) e termina no Domingo (6)
+    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
     const dailyPercentage = Math.min(Math.round((state.dailyUserData.currentAmount / state.settings.dailyGoal) * 100), 100);
     state.persistentUserData.weeklyProgress[dayIndex].p = dailyPercentage;
     
@@ -22,37 +22,34 @@ function addWater(amount) {
 
 function handleReminderToggle(event) {
     const isEnabled = event.target.checked;
+    const state = loadState();
+    state.settings.reminders = isEnabled;
+    saveState(state);
+
     if (isEnabled && Notification.permission !== 'granted') {
         Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                console.log('Permissão para notificações concedida!');
-                // Aqui você pode adicionar lógica para agendar notificações
-            } else {
-                console.log('Permissão para notificações negada.');
-                event.target.checked = false; // Desfaz o toggle se a permissão for negada
+            if (permission !== 'granted') {
+                event.target.checked = false;
+                const currentState = loadState();
+                currentState.settings.reminders = false;
+                saveState(currentState);
             }
-            const state = loadState();
-            state.settings.reminders = event.target.checked;
-            saveState(state);
         });
-    } else {
-        const state = loadState();
-        state.settings.reminders = isEnabled;
-        saveState(state);
     }
 }
 
 function initializeApp() {
+    setupEventListeners();
+    
     const today = new Date();
     document.getElementById('date-header').textContent = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     
     renderDashboard();
-    setupEventListeners();
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
-            .then(registration => console.log('Service Worker registrado com sucesso:', registration))
-            .catch(error => console.log('Falha ao registrar Service Worker:', error));
+            .then(registration => console.log('Service Worker registado com sucesso:', registration))
+            .catch(error => console.log('Falha ao registar Service Worker:', error));
     }
 }
 
@@ -64,15 +61,9 @@ function setupEventListeners() {
         const action = targetElement.dataset.action;
 
         switch(action) {
-            case 'showSettings':
-                showSettingsModal();
-                break;
-            case 'saveLayout':
-                saveLayout();
-                break;
-            case 'showAddWater':
-                showAddWaterModal();
-                break;
+            case 'showSettings': showSettingsModal(); break;
+            case 'saveLayout': saveLayout(); break;
+            case 'showAddWater': showAddWaterModal(); break;
             case 'addCustomWater':
                 const amount = parseInt(document.getElementById('custom-amount').value, 10);
                 addWater(amount);
@@ -90,7 +81,7 @@ function setupEventListeners() {
                 if (!isNaN(newGoal) && newGoal > 0) {
                     state.settings.dailyGoal = newGoal;
                 }
-                // A lógica do toggle é tratada em um evento 'change' separado
+                state.settings.reminders = document.getElementById('reminders-toggle').checked;
                 saveState(state);
                 renderDashboard();
                 targetElement.closest('.modal-container')?.remove();
@@ -107,7 +98,6 @@ function setupEventListeners() {
         }
     });
 
-    // Evento separado para o toggle de lembretes
     document.body.addEventListener('change', (event) => {
         if (event.target.id === 'reminders-toggle') {
             handleReminderToggle(event);
