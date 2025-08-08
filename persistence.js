@@ -5,7 +5,6 @@ const defaultState = {
         theme: 'teal',
         widgetOrder: ['progress', 'stats', 'history', 'weekly', 'achievements', 'tip']
     },
-    // Dados que persistem entre os dias
     persistentUserData: {
         weeklyProgress: [
             { day: 'S', p: 0 }, { day: 'T', p: 0 }, { day: 'Q', p: 0 }, { day: 'Q', p: 0 },
@@ -19,7 +18,6 @@ const defaultState = {
         ],
         lastResetDate: null
     },
-    // Dados que são zerados diariamente
     dailyUserData: {
         currentAmount: 0,
         history: [],
@@ -39,21 +37,24 @@ export function loadState() {
 
     let persistentUserData = JSON.parse(localStorage.getItem('persistentUserData')) || defaultState.persistentUserData;
     
-    // Lógica de Reset Diário
     const today = new Date().toDateString();
     if (persistentUserData.lastResetDate !== today) {
-        // Zera o progresso do dia seguinte, se necessário
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        if (persistentUserData.lastResetDate !== yesterday.toDateString()) {
-             const dayOfWeek = new Date().getDay();
-             const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
-             persistentUserData.weeklyProgress[dayIndex].p = 0;
-        }
+        const lastDate = persistentUserData.lastResetDate ? new Date(persistentUserData.lastResetDate) : new Date(0);
+        const todayDate = new Date();
+        const diffTime = Math.abs(todayDate - lastDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+        if (diffDays > 1) {
+            const dayOfWeek = todayDate.getDay();
+            const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
+            if (persistentUserData.weeklyProgress[dayIndex].p > 0) {
+                 persistentUserData.weeklyProgress[dayIndex].p = 0;
+            }
+        }
+        
         persistentUserData.lastResetDate = today;
         localStorage.setItem('persistentUserData', JSON.stringify(persistentUserData));
-        localStorage.removeItem(getTodayKey()); // Garante que os dados do dia comecem do zero
+        localStorage.removeItem(getTodayKey());
     }
 
     const dailyUserData = JSON.parse(localStorage.getItem(getTodayKey())) || defaultState.dailyUserData;
