@@ -1,20 +1,25 @@
 export const themes = {
-    acqua_glass_light: {
-        name: 'Acqua Glass',
+    // ... (seu tema acqua_glass_light existente) ...
+
+    acqua_vibrant: {
+        name: 'Acqua Vibrante',
         '--color-bg-main': 'linear-gradient(-45deg, #03A9F4, #01579B, #0277BD, #4FC3F7)',
         '--color-text-base': '#FFFFFF',
-        '--color-text-muted': 'rgba(255, 255, 255, 0.7)',
-        '--color-primary': '#FFFFFF',
-        '--color-accent': '#60A5FA',
+        '--color-text-muted': 'rgba(230, 240, 255, 0.8)', // Um branco levemente azulado
         
-        // Propriedades do Glassmorphism
-        '--glass-bg': 'rgba(255, 255, 255, 0.1)',
-        '--glass-backdrop-filter': 'blur(20px)',
-        '--glass-border': '1px solid rgba(255, 255, 255, 0.15)',
-        '--glass-shadow': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
+        // --- A GRANDE MUDANÇA: CORES DE DESTAQUE ---
+        '--color-primary': '#A7F3D0', // Verde-água claro para textos e ícones principais
+        '--color-accent': '#34D399',  // Verde esmeralda vibrante para progresso e ações
 
-        // Cores dos botões
-        '--btn-primary-bg': '#FFFFFF',
-        '--btn-primary-text': '#0277BD',
+        // --- REFINAMENTO DO GLASSMORPHISM ---
+        '--glass-bg': 'rgba(255, 255, 255, 0.08)', // Um pouco menos branco, mais transparente
+        '--glass-backdrop-filter': 'blur(24px)',
+        '--glass-border': '1px solid rgba(255, 255, 255, 0.1)',
+        '--glass-shadow': '0 4px 20px 0 rgba(0, 0, 0, 0.2)', // Sombra mais suave
+
+        // --- BOTÕES COM MAIS PERSONALIDADE ---
+        '--btn-primary-bg': 'linear-gradient(45deg, var(--color-accent), var(--color-primary))', // Botão principal em gradiente
+        '--btn-primary-text': '#003d5b', // Texto do botão com alto contraste
     }
 };
+
