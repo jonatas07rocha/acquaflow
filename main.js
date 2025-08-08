@@ -4,20 +4,15 @@ import { dom } from './ui.js';
 import { renderUI, updateUI, showModal, hideModal } from './ui_controller.js';
 import { loadState, saveState } from './persistence.js';
 
-// --- FUNÇÕES DE LÓGICA PRINCIPAL ---
+// --- LÓGICA PRINCIPAL ---
 function addWater(amount) {
-    if (isNaN(amount) || amount <= 0) {
-        // showToast("Valor inválido", true); // Futura implementação de toast
-        return;
-    }
+    if (isNaN(amount) || amount <= 0) return;
     
     state.currentWater += amount;
     state.waterHistory[state.waterHistory.length - 1] += amount;
-
     if (state.shortcutHistory.hasOwnProperty(amount)) {
         state.shortcutHistory[amount] = (state.shortcutHistory[amount] || 0) + 1;
     }
-
     const now = new Date();
     state.lastDrinkTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     state.lastDrinkAmount = amount;
@@ -30,42 +25,42 @@ function addWater(amount) {
     hideModal(dom.addWaterModal);
 }
 
-// --- FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO ---
+// --- INICIALIZAÇÃO ---
 function initializeApp() {
-    applyTheme(themes.acqua_glass_light);
+    applyTheme(themes.acqua_vibrant);
     loadState();
     renderUI();
     setupEventListeners();
-    lucide.createIcons();
+    
+    // --- MUDANÇA AQUI ---
+    // Garante que os ícones sejam criados DEPOIS que o HTML deles existir.
+    lucide.createIcons(); 
 }
 
 function applyTheme(themeObject) {
     const root = document.documentElement;
-    for (const property in themeObject) {
-        if (property !== 'name') {
-            root.style.setProperty(property, themeObject[property]);
+    Object.keys(themeObject).forEach(key => {
+        if (key !== 'name') {
+            root.style.setProperty(key, themeObject[key]);
         }
-    }
+    });
     document.body.style.animation = 'water-flow 15s ease infinite';
 }
 
 function setupEventListeners() {
-    // Navegação Principal
+    // Navegação e Modais
     dom.statsNavBtn.addEventListener('click', () => showModal(dom.statsModal));
     dom.addWaterNavBtn.addEventListener('click', () => showModal(dom.addWaterModal));
     dom.settingsNavBtn.addEventListener('click', () => showModal(dom.settingsModal));
 
-    // Botões de Fechar Modais
     dom.closeStatsModalBtn.addEventListener('click', () => hideModal(dom.statsModal));
     dom.closeAddModalBtn.addEventListener('click', () => hideModal(dom.addWaterModal));
     dom.closeSettingsModalBtn.addEventListener('click', () => hideModal(dom.settingsModal));
 
-    // Atalhos Rápidos
+    // Ações
     dom.quickAddButtons.forEach(btn => {
         btn.addEventListener('click', () => addWater(parseInt(btn.dataset.amount)));
     });
-
-    // Lógica do Modal "Adicionar Água"
     dom.addShortcutButtons.forEach(btn => {
         btn.addEventListener('click', () => addWater(parseInt(btn.dataset.amount)));
     });
@@ -74,19 +69,15 @@ function setupEventListeners() {
         addWater(amount);
         dom.customAmountInput.value = '';
     });
-
-    // Lógica do Modal "Configurações"
     dom.saveManualGoalBtn.addEventListener('click', () => {
         const newGoal = parseInt(dom.manualGoalInput.value);
         if (!isNaN(newGoal) && newGoal > 0) {
             state.goalWater = newGoal;
             saveState();
             updateUI();
-            // showToast("Meta salva com sucesso!");
         }
     });
 }
 
-// --- PONTO DE ENTRADA ---
 document.addEventListener('DOMContentLoaded', initializeApp);
 
