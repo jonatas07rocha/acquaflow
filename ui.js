@@ -149,9 +149,9 @@ const modalTemplates = {
                         <h3 class="font-semibold mb-2">Tema</h3>
                         <div class="flex gap-4">
                             ${Object.keys(themes).map(key => `
-                                <div data-theme="${key}" class="theme-selector-item cursor-pointer">
+                                <div data-action="selectTheme" data-theme="${key}" class="theme-selector-item cursor-pointer">
                                     <div class="w-10 h-10 rounded-full border-2 ${state.settings.theme === key ? 'border-white' : 'border-transparent'}" style="background: linear-gradient(135deg, ${themes[key].gradientFrom}, ${themes[key].gradientTo});"></div>
-                                    <p class="text-xs text-center mt-1">${themes[key].name}</p>
+                                    <p class="text-xs text-center mt-1 pointer-events-none">${themes[key].name}</p>
                                 </div>`).join('')}
                         </div>
                     </div>
