@@ -23,6 +23,13 @@ function initializeApp() {
     
     renderDashboard();
     setupEventListeners();
+
+    // Registra o Service Worker para funcionalidade PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => console.log('Service Worker registrado com sucesso:', registration))
+            .catch(error => console.log('Falha ao registrar Service Worker:', error));
+    }
 }
 
 // Configura todos os ouvintes de eventos
@@ -30,47 +37,56 @@ function setupEventListeners() {
     // Usa delegação de eventos para botões que são criados dinamicamente
     document.body.addEventListener('click', (event) => {
         const target = event.target.closest('button');
-        if (!target) return;
-
-        // Botões do Cabeçalho
-        if (target.closest('#settings-button')) showSettingsModal();
-        if (target.id === 'save-layout-btn') saveLayout();
-        
-        // Ações dos Widgets
-        if (target.closest('.main-add-button')) showAddWaterModal();
-
-        // Ações dos Modais
-        if (target.dataset.action === 'addCustomWater') {
-            const amount = parseInt(document.getElementById('custom-amount').value, 10);
-            addWater(amount);
-            document.getElementById('add-water-modal').remove();
-        }
-        if (target.dataset.action === 'closeModal') {
-            target.closest('.modal-container').remove();
-        }
-        if (target.dataset.action === 'enterReorderMode') enterReorderMode();
-        if (target.dataset.action === 'saveSettings') {
-            const state = loadState();
-            const newGoal = parseInt(document.getElementById('goal-input').value, 10);
-            if (!isNaN(newGoal) && newGoal > 0) {
-                state.settings.dailyGoal = newGoal;
+        if (!target) {
+             // Permite que o clique no seletor de tema funcione
+            if (event.target.closest('.theme-selector-item')) {
+                const themeName = event.target.closest('.theme-selector-item').dataset.theme;
+                const state = loadState();
+                state.settings.theme = themeName;
+                saveState(state);
+                renderDashboard();
+                document.getElementById('settings-modal')?.remove();
+                showSettingsModal();
             }
-            state.settings.reminders = document.getElementById('reminders-toggle').checked;
-            saveState(state);
-            renderDashboard();
-            document.getElementById('settings-modal').remove();
+            return;
         }
-        if (target.closest('.theme-selector-item')) {
-            const themeName = target.closest('.theme-selector-item').dataset.theme;
-            const state = loadState();
-            state.settings.theme = themeName;
-            saveState(state);
-            renderDashboard(); // Re-renderiza para aplicar o tema
-            document.getElementById('settings-modal').remove();
-            showSettingsModal(); // Reabre o modal para mostrar a seleção
+
+        const action = target.dataset.action;
+
+        switch(action) {
+            case 'showSettings':
+                showSettingsModal();
+                break;
+            case 'saveLayout':
+                saveLayout();
+                break;
+            case 'showAddWater':
+                showAddWaterModal();
+                break;
+            case 'addCustomWater':
+                const amount = parseInt(document.getElementById('custom-amount').value, 10);
+                addWater(amount);
+                target.closest('.modal-container')?.remove();
+                break;
+            case 'closeModal':
+                target.closest('.modal-container')?.remove();
+                break;
+            case 'enterReorderMode':
+                enterReorderMode();
+                break;
+            case 'saveSettings':
+                const state = loadState();
+                const newGoal = parseInt(document.getElementById('goal-input').value, 10);
+                if (!isNaN(newGoal) && newGoal > 0) {
+                    state.settings.dailyGoal = newGoal;
+                }
+                state.settings.reminders = document.getElementById('reminders-toggle').checked;
+                saveState(state);
+                renderDashboard();
+                target.closest('.modal-container')?.remove();
+                break;
         }
     });
 }
 
-// Inicia tudo quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', initializeApp);
