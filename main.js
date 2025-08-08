@@ -39,13 +39,12 @@ function handleReminderToggle(event) {
 }
 
 function initializeApp() {
-    setupEventListeners();
-    
-    const today = new Date();
-    document.getElementById('date-header').textContent = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-    
+    // 1. Renderiza a interface primeiro para garantir que todos os elementos existam.
     renderDashboard();
+    // 2. Agora que os elementos existem, configura os eventos.
+    setupEventListeners();
 
+    // 3. Registra o Service Worker.
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')
             .then(registration => console.log('Service Worker registado com sucesso:', registration))
