@@ -6,6 +6,7 @@ import { dom } from './ui.js';
  */
 export function renderUI() {
     renderMainContent();
+    renderNavigation(); // Adicionamos a chamada para renderizar a navegação
     renderModals();
     collectDOMReferences();
     updateUI();
@@ -66,6 +67,27 @@ function renderMainContent() {
 }
 
 /**
+ * Cria e injeta a barra de navegação inferior.
+ */
+function renderNavigation() {
+    const nav = document.getElementById('bottom-nav');
+    if (!nav) return;
+
+    nav.innerHTML = `
+        <button id="stats-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20" aria-label="Abrir Dashboard">
+            <i data-lucide="layout-dashboard" class="w-7 h-7"></i>
+        </button>
+        <button id="add-water-nav-btn" class="w-16 h-16 bg-white rounded-full text-blue-500 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300" style="background-color: var(--btn-primary-bg); color: var(--btn-primary-text);" aria-label="Adicionar água">
+            <i data-lucide="plus" class="w-8 h-8"></i>
+        </button>
+        <button id="settings-nav-btn" class="p-3 rounded-full transition-colors hover:bg-white/20" aria-label="Abrir configurações">
+            <i data-lucide="settings" class="w-7 h-7"></i>
+        </button>
+    `;
+}
+
+
+/**
  * Cria e injeta os modais no corpo do documento.
  */
 function renderModals() {
@@ -76,6 +98,7 @@ function renderModals() {
  * Coleta as referências dos elementos do DOM recém-criados.
  */
 function collectDOMReferences() {
+    // Referências do conteúdo principal
     dom.progressCircle = document.getElementById('progress-ring');
     dom.currentWaterDisplay = document.getElementById('current-water-display');
     dom.percentageDisplay = document.getElementById('percentage-display');
@@ -83,6 +106,11 @@ function collectDOMReferences() {
     dom.goalCardValue = document.getElementById('goal-card-value');
     dom.lastDrinkCardValue = document.getElementById('last-drink-card-value');
     dom.quickAddButtons = document.querySelectorAll('.quick-add-btn');
+
+    // Referências da navegação
+    dom.statsNavBtn = document.getElementById('stats-nav-btn');
+    dom.addWaterNavBtn = document.getElementById('add-water-nav-btn');
+    dom.settingsNavBtn = document.getElementById('settings-nav-btn');
 }
 
 /**
@@ -107,7 +135,6 @@ export function updateUI() {
     const percentage = Math.floor(progress * 100);
     dom.percentageDisplay.textContent = `${isNaN(percentage) ? 0 : percentage}% da meta`;
 
-    // Atualiza a mensagem motivacional
     if (progress >= 1) {
         dom.motivationalMessage.textContent = "Parabéns, meta atingida! 🎉";
     } else if (progress > 0.7) {
@@ -118,7 +145,6 @@ export function updateUI() {
         dom.motivationalMessage.textContent = "Vamos começar a hidratar?";
     }
 
-    // Atualiza outros elementos
     document.getElementById('header-streak-count').textContent = state.streakCount;
     dom.goalCardValue.textContent = `${state.goalWater} ml`;
     if(state.lastDrinkTime && state.lastDrinkAmount > 0) {
