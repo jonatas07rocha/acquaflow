@@ -21,7 +21,9 @@ const modalTemplates = {
             : 'Receber notificações para beber água.';
         return `<div id="settings-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-sm text-left"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold">Configurações</h2><button data-action="closeModal" class="p-1 rounded-full hover:bg-white/20"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="space-y-6"><div><button data-action="enterReorderMode" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"><i data-lucide="move" class="w-4 h-4 mr-2"></i>Reorganizar Widgets</button></div><div class="flex justify-between items-center"><div><label for="goal-input" class="font-semibold">Meta Diária (ml)</label><p class="text-xs opacity-70">Defina o seu objetivo de hidratação.</p></div><input type="number" id="goal-input" class="w-24 bg-white/10 border-2 border-white/20 rounded-lg p-2 text-center" value="${state.settings.dailyGoal}"></div><div class="flex justify-between items-center"><div><h3 class="font-semibold">Lembretes</h3><p class="text-xs opacity-70">${reminderText}</p></div><label class="switch"><input type="checkbox" id="reminders-toggle" ${state.settings.reminders ? 'checked' : ''}><span class="slider"></span></label></div><div><h3 class="font-semibold mb-2">Tema</h3><div class="flex gap-4">${Object.keys(themes).map(key => `<div data-action="selectTheme" data-theme="${key}" class="theme-selector-item cursor-pointer"><div class="w-10 h-10 rounded-full border-2 ${state.settings.theme === key ? 'border-white' : 'border-transparent'}" style="background: linear-gradient(135deg, ${themes[key].gradientFrom}, ${themes[key].gradientTo});"></div><p class="text-xs text-center mt-1 pointer-events-none">${themes[key].name}</p></div>`).join('')}</div></div></div><button data-action="saveSettings" class="w-full main-add-button text-white font-bold py-3 mt-8 rounded-lg">Salvar e Fechar</button></div></div>`;
     },
-    calendarReminder: () => `<div id="calendar-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-xs text-center"><h2 class="text-xl font-bold mb-4">Lembretes no Calendário</h2><p class="text-sm opacity-80 mb-6">Para garantir os lembretes no seu iPhone, criaremos um evento no seu calendário que o notificará a cada hora. Deseja fazer isso agora?</p><div class="flex gap-3 mt-6"><button data-action="closeModal" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors">Agora Não</button><button data-action="createCalendarReminder" class="w-full main-add-button text-white font-bold py-3 rounded-lg">Sim, Criar</button></div></div></div>`
+    calendarReminder: () => `<div id="calendar-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-xs text-center"><h2 class="text-xl font-bold mb-4">Lembretes no Calendário</h2><p class="text-sm opacity-80 mb-6">Para garantir os lembretes no seu iPhone, criaremos um evento no seu calendário que o notificará a cada hora. Deseja fazer isso agora?</p><div class="flex gap-3 mt-6"><button data-action="closeModal" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors">Agora Não</button><button data-action="createCalendarReminder" class="w-full main-add-button text-white font-bold py-3 rounded-lg">Sim, Criar</button></div></div></div>`,
+    // NOVO MODAL DE AVISO
+    info: (title, message) => `<div id="info-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-xs text-center"><h2 class="text-xl font-bold mb-4">${title}</h2><p class="text-sm opacity-80 mb-6">${message}</p><button data-action="closeModal" class="w-full main-add-button text-white font-bold py-3 rounded-lg">Fechar</button></div></div>`
 };
 
 export function renderDashboard() {
@@ -97,6 +99,13 @@ export function showSettingsModal() {
 export function showCalendarReminderModal() {
     closeAllModals();
     document.body.insertAdjacentHTML('beforeend', modalTemplates.calendarReminder());
+    lucide.createIcons();
+}
+
+// NOVA FUNÇÃO PARA MOSTRAR O MODAL DE AVISO
+export function showInfoModal(title, message) {
+    closeAllModals();
+    document.body.insertAdjacentHTML('beforeend', modalTemplates.info(title, message));
     lucide.createIcons();
 }
 
