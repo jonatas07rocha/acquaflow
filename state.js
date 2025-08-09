@@ -18,8 +18,8 @@ function getInitialState() {
             dailyGoal: 2000,
             reminders: false,
             theme: 'teal',
-            // Adiciona 'weekly' de volta à ordem padrão dos widgets
-            widgetOrder: ['progress', 'stats', 'weekly', 'history', 'achievements', 'tip']
+            // 'weekly' foi removido da ordem padrão dos widgets.
+            widgetOrder: ['progress', 'stats', 'history', 'achievements', 'tip']
         },
         dailyUserData: {
             currentAmount: 0,
@@ -27,7 +27,6 @@ function getInitialState() {
         },
         persistentUserData: {
             achievements: JSON.parse(JSON.stringify(allAchievements)),
-            // Siglas dos dias atualizadas para maior clareza
             weeklyProgress: [
                 { day: 'Seg', p: 0 }, { day: 'Ter', p: 0 }, { day: 'Qua', p: 0 }, 
                 { day: 'Qui', p: 0 }, { day: 'Sex', p: 0 }, { day: 'Sáb', p: 0 }, { day: 'Dom', p: 0 }
@@ -43,7 +42,6 @@ function getInitialState() {
             savedState.dailyUserData = defaultState.dailyUserData;
             
             const dayOfWeek = new Date().getDay();
-            // Se for segunda-feira (getDay() === 1), reseta o progresso semanal
             if (dayOfWeek === 1) {
                 savedState.persistentUserData.weeklyProgress = defaultState.persistentUserData.weeklyProgress;
             }
@@ -54,6 +52,12 @@ function getInitialState() {
             return savedAch ? { ...defaultAch, u: savedAch.u } : defaultAch;
         });
         savedState.persistentUserData.achievements = updatedAchievements;
+
+        // Garante que a ordem dos widgets não inclua 'weekly' se não estiver definido
+        if (savedState.settings && savedState.settings.widgetOrder) {
+            savedState.settings.widgetOrder = savedState.settings.widgetOrder.filter(id => id !== 'weekly');
+        }
+
 
         return {
             ...defaultState,
