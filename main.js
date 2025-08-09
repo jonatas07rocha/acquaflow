@@ -1,51 +1,51 @@
 import { getState, updateState } from './state.js';
-import { renderDashboard, showAddWaterModal, showSettingsModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
+import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
 import { checkAndUnlockAchievements } from './achievements.js';
-import { playAddWaterSound, playButtonClickSound } from './audio.js'; // Importa os sons
+import { playAddWaterSound, playButtonClickSound } from './audio.js';
+import { createHourlyReminder } from './calendar.js'; // Importa a nova função
+
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 /**
- * Adiciona uma nova entrada de consumo de água e atualiza o estado da aplicação.
- * @param {number} amount - A quantidade de água em ml a ser adicionada.
+ * Adiciona uma nova entrada de consumo de água.
  */
 function addWater(amount) {
     if (amount <= 0 || isNaN(amount)) return;
-
-    playAddWaterSound(); // TOCA O SOM DE GOTA
-
+    playAddWaterSound();
     const state = getState();
     const newAmount = state.dailyUserData.currentAmount + amount;
-    
     const now = new Date();
     const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-    
     const newHistoryEntry = { amount, time, timestamp: now.getTime() };
     const newHistory = [newHistoryEntry, ...state.dailyUserData.history];
-    
-    updateState({
-        dailyUserData: {
-            currentAmount: newAmount,
-            history: newHistory
-        }
-    });
-    
+    updateState({ dailyUserData: { currentAmount: newAmount, history: newHistory } });
     updateDynamicContent();
     checkAndUnlockAchievements();
 }
 
 /**
- * Lida com a ativação/desativação dos lembretes.
+ * Lida com a ativação/desativação dos lembretes, direcionando para
+ * o fluxo correto dependendo do sistema operacional.
  */
 function handleReminderToggle(event) {
     const isEnabled = event.target.checked;
     updateState({ settings: { reminders: isEnabled } });
 
-    if (isEnabled && Notification.permission !== 'granted') {
-        Notification.requestPermission().then(permission => {
-            if (permission !== 'granted') {
-                event.target.checked = false;
-                updateState({ settings: { reminders: false } });
-            }
-        });
+    if (!isEnabled) return;
+
+    if (isIOS) {
+        // No iOS, abre o modal para criar o evento no calendário.
+        showCalendarReminderModal();
+    } else {
+        // Em outros sistemas, usa as notificações push padrão.
+        if (Notification.permission !== 'granted') {
+            Notification.requestPermission().then(permission => {
+                if (permission !== 'granted') {
+                    event.target.checked = false;
+                    updateState({ settings: { reminders: false } });
+                }
+            });
+        }
     }
 }
 
@@ -70,12 +70,7 @@ function setupEventListeners() {
         if (!targetElement) return;
 
         const action = targetElement.dataset.action;
-
-        // Toca o som de clique para ações principais e interativas
-        const actionsWithSound = [
-            'showSettings', 'saveLayout', 'showAddWater', 'addCustomWater',
-            'closeModal', 'enterReorderMode', 'saveSettings', 'selectTheme'
-        ];
+        const actionsWithSound = ['showSettings', 'saveLayout', 'showAddWater', 'addCustomWater', 'closeModal', 'enterReorderMode', 'saveSettings', 'selectTheme', 'createCalendarReminder'];
         if (actionsWithSound.includes(action)) {
             playButtonClickSound();
         }
@@ -87,15 +82,17 @@ function setupEventListeners() {
             case 'addCustomWater': confirmAddWater(); break;
             case 'closeModal': closeAllModals(); break;
             case 'enterReorderMode': enterReorderMode(); break;
+            case 'createCalendarReminder': // Nova ação
+                createHourlyReminder();
+                closeAllModals();
+                break;
             case 'saveSettings':
                 const newGoal = parseInt(document.getElementById('goal-input').value, 10);
                 const reminders = document.getElementById('reminders-toggle').checked;
-                
                 const settingsToUpdate = { reminders };
                 if (!isNaN(newGoal) && newGoal > 0) {
                     settingsToUpdate.dailyGoal = newGoal;
                 }
-                
                 updateState({ settings: settingsToUpdate });
                 renderDashboard();
                 closeAllModals();
@@ -105,7 +102,6 @@ function setupEventListeners() {
                 const themeName = targetElement.dataset.theme;
                 updateState({ settings: { theme: themeName } });
                 applyTheme(themeName);
-                
                 document.querySelectorAll('.theme-selector-item .w-10').forEach(el => {
                     el.classList.remove('border-white');
                     el.classList.add('border-transparent');
@@ -139,7 +135,6 @@ function initializeApp() {
     renderDashboard();
     setupEventListeners();
     checkAndUnlockAchievements();
-
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
             .then(registration => console.log('Service Worker registrado com sucesso:', registration))
