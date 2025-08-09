@@ -1,5 +1,4 @@
 // Lista mestre de todas as conquistas disponíveis no aplicativo.
-// n = nome, u = unlocked (desbloqueada), icon = ícone do Lucide
 const allAchievements = [
     { id: 'FIRST_DRINK',    n: 'Primeiro Gole',      u: false, icon: 'cup-soda' },
     { id: 'MORNING_HYDRATION', n: 'Força Matinal',    u: false, icon: 'sunrise' },
@@ -19,17 +18,19 @@ function getInitialState() {
             dailyGoal: 2000,
             reminders: false,
             theme: 'teal',
-            widgetOrder: ['progress', 'stats', 'history', 'weekly', 'achievements', 'tip']
+            // Adiciona 'weekly' de volta à ordem padrão dos widgets
+            widgetOrder: ['progress', 'stats', 'weekly', 'history', 'achievements', 'tip']
         },
         dailyUserData: {
             currentAmount: 0,
             history: []
         },
         persistentUserData: {
-            achievements: JSON.parse(JSON.stringify(allAchievements)), // Cria uma cópia limpa
+            achievements: JSON.parse(JSON.stringify(allAchievements)),
+            // Siglas dos dias atualizadas para maior clareza
             weeklyProgress: [
-                { day: 'S', p: 0 }, { day: 'T', p: 0 }, { day: 'Q', p: 0 }, 
-                { day: 'Q', p: 0 }, { day: 'S', p: 0 }, { day: 'S', p: 0 }, { day: 'D', p: 0 }
+                { day: 'Seg', p: 0 }, { day: 'Ter', p: 0 }, { day: 'Qua', p: 0 }, 
+                { day: 'Qui', p: 0 }, { day: 'Sex', p: 0 }, { day: 'Sáb', p: 0 }, { day: 'Dom', p: 0 }
             ]
         }
     };
@@ -37,27 +38,23 @@ function getInitialState() {
     if (savedStateJSON) {
         const savedState = JSON.parse(savedStateJSON);
         
-        // Se for um novo dia, reseta os dados diários
         if (savedState.lastVisit !== today) {
             savedState.lastVisit = today;
             savedState.dailyUserData = defaultState.dailyUserData;
             
             const dayOfWeek = new Date().getDay();
-            // Se for segunda-feira (1), reseta o progresso semanal
+            // Se for segunda-feira (getDay() === 1), reseta o progresso semanal
             if (dayOfWeek === 1) {
                 savedState.persistentUserData.weeklyProgress = defaultState.persistentUserData.weeklyProgress;
             }
         }
 
-        // Garante que a lista de conquistas esteja sempre atualizada
-        // sem perder o progresso do usuário.
         const updatedAchievements = allAchievements.map(defaultAch => {
             const savedAch = savedState.persistentUserData.achievements.find(a => a.id === defaultAch.id);
             return savedAch ? { ...defaultAch, u: savedAch.u } : defaultAch;
         });
         savedState.persistentUserData.achievements = updatedAchievements;
 
-        // Mescla o estado salvo com o padrão para garantir que novas propriedades sejam adicionadas
         return {
             ...defaultState,
             ...savedState,
