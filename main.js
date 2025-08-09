@@ -1,5 +1,6 @@
 import { getState, updateState } from './state.js';
 import { renderDashboard, showAddWaterModal, showSettingsModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
+import { checkAndUnlockAchievements } from './achievements.js';
 
 /**
  * Adiciona uma nova entrada de consumo de água e atualiza o estado da aplicação.
@@ -14,9 +15,9 @@ function addWater(amount) {
     const now = new Date();
     const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
     
-    const newHistory = [{ amount, time }, ...state.dailyUserData.history];
-
-    // A lógica de atualização do progresso semanal foi removida daqui.
+    // Adicionamos o 'timestamp' para verificações de conquistas baseadas em tempo.
+    const newHistoryEntry = { amount, time, timestamp: now.getTime() };
+    const newHistory = [newHistoryEntry, ...state.dailyUserData.history];
     
     updateState({
         dailyUserData: {
@@ -26,6 +27,7 @@ function addWater(amount) {
     });
     
     updateDynamicContent();
+    checkAndUnlockAchievements(); // <-- A MÁGICA ACONTECE AQUI!
 }
 
 /**
@@ -39,7 +41,6 @@ function handleReminderToggle(event) {
     if (isEnabled && Notification.permission !== 'granted') {
         Notification.requestPermission().then(permission => {
             if (permission !== 'granted') {
-                // Desfaz a alteração na UI se a permissão for negada.
                 event.target.checked = false;
                 updateState({ settings: { reminders: false } });
             }
@@ -61,7 +62,6 @@ function confirmAddWater() {
 
 /**
  * Configura todos os event listeners da aplicação.
- * Utiliza delegação de eventos no 'body' para otimizar o desempenho.
  */
 function setupEventListeners() {
     document.body.addEventListener('click', (event) => {
@@ -71,24 +71,12 @@ function setupEventListeners() {
         const action = targetElement.dataset.action;
 
         switch(action) {
-            case 'showSettings': 
-                showSettingsModal(); 
-                break;
-            case 'saveLayout': 
-                saveLayout(); 
-                break;
-            case 'showAddWater': 
-                showAddWaterModal(); 
-                break;
-            case 'addCustomWater':
-                confirmAddWater();
-                break;
-            case 'closeModal':
-                closeAllModals();
-                break;
-            case 'enterReorderMode':
-                enterReorderMode();
-                break;
+            case 'showSettings': showSettingsModal(); break;
+            case 'saveLayout': saveLayout(); break;
+            case 'showAddWater': showAddWaterModal(); break;
+            case 'addCustomWater': confirmAddWater(); break;
+            case 'closeModal': closeAllModals(); break;
+            case 'enterReorderMode': enterReorderMode(); break;
             case 'saveSettings':
                 const newGoal = parseInt(document.getElementById('goal-input').value, 10);
                 const reminders = document.getElementById('reminders-toggle').checked;
@@ -99,15 +87,15 @@ function setupEventListeners() {
                 }
                 
                 updateState({ settings: settingsToUpdate });
-                renderDashboard(); // Re-renderiza para refletir a nova meta
+                renderDashboard();
                 closeAllModals();
+                checkAndUnlockAchievements(); // Verifica conquistas caso a meta tenha mudado
                 break;
             case 'selectTheme':
                 const themeName = targetElement.dataset.theme;
                 updateState({ settings: { theme: themeName } });
                 applyTheme(themeName);
                 
-                // Atualiza o feedback visual do seletor de tema
                 document.querySelectorAll('.theme-selector-item .w-10').forEach(el => {
                     el.classList.remove('border-white');
                     el.classList.add('border-transparent');
@@ -124,22 +112,22 @@ function setupEventListeners() {
         }
     });
 
-    // Adiciona um listener para a tecla "Enter" no modal de adicionar água
     document.body.addEventListener('keyup', (event) => {
         const amountInput = document.getElementById('custom-amount');
         if (amountInput && document.activeElement === amountInput && event.key === 'Enter') {
-            event.preventDefault(); // Previne qualquer comportamento padrão do Enter
+            event.preventDefault();
             confirmAddWater();
         }
     });
 }
 
 /**
- * Inicializa a aplicação: renderiza o dashboard, configura os listeners e registra o Service Worker.
+ * Inicializa a aplicação.
  */
 function initializeApp() {
     renderDashboard();
     setupEventListeners();
+    checkAndUnlockAchievements(); // Verifica conquistas ao iniciar o app
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
