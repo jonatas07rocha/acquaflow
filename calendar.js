@@ -1,3 +1,5 @@
+import { showInfoModal } from './ui.js';
+
 /**
  * Gera e inicia o download de um arquivo de calendário (.ics) para criar
  * lembretes de hidratação. O evento criado se repete a cada hora até o final do dia.
@@ -7,10 +9,9 @@ export function createHourlyReminder() {
     const endOfDay = new Date();
     endOfDay.setHours(22, 0, 0, 0); // Define o fim dos lembretes para as 22h
 
-    // Se já passou do horário, informa o usuário e não cria o evento.
+    // Se já passou do horário, mostra o modal de aviso e não cria o evento.
     if (now > endOfDay) {
-        // Usaremos um modal customizado no futuro, por enquanto um alerta simples.
-        alert("Já passou do horário de criar novos lembretes por hoje!");
+        showInfoModal("Aviso", "Já passou do horário de criar novos lembretes por hoje!");
         return;
     }
 
