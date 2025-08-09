@@ -23,7 +23,7 @@ function addWater(amount) {
     const newHistoryEntry = { amount, time, timestamp: now.getTime() };
     const newHistory = [newHistoryEntry, ...state.dailyUserData.history];
 
-    // --- LÓGICA DO PROGRESSO SEMANAL RESTAURADA ---
+    // LÓGICA DO PROGRESSO SEMANAL REINTEGRADA
     const dayOfWeek = now.getDay(); // Domingo = 0, Segunda = 1, etc.
     const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1; // Ajusta para a semana começar na Segunda (índice 0)
     
@@ -31,7 +31,6 @@ function addWater(amount) {
     
     const newWeeklyProgress = [...state.persistentUserData.weeklyProgress];
     newWeeklyProgress[dayIndex].p = dailyPercentage;
-    // --- FIM DA LÓGICA RESTAURADA ---
 
     updateState({
         dailyUserData: {
@@ -39,7 +38,6 @@ function addWater(amount) {
             history: newHistory
         },
         persistentUserData: {
-            // Mantém as outras informações persistentes (como conquistas) e atualiza o progresso.
             ...state.persistentUserData,
             weeklyProgress: newWeeklyProgress
         }
@@ -166,4 +164,3 @@ function initializeApp() {
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
-
