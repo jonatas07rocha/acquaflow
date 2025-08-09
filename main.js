@@ -2,30 +2,55 @@ import { getState, updateState } from './state.js';
 import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
 import { checkAndUnlockAchievements } from './achievements.js';
 import { playAddWaterSound, playButtonClickSound } from './audio.js';
-import { createHourlyReminder } from './calendar.js'; // Importa a nova função
+import { createHourlyReminder } from './calendar.js';
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 /**
- * Adiciona uma nova entrada de consumo de água.
+ * Adiciona uma nova entrada de consumo de água e atualiza o estado da aplicação.
+ * @param {number} amount - A quantidade de água em ml a ser adicionada.
  */
 function addWater(amount) {
     if (amount <= 0 || isNaN(amount)) return;
     playAddWaterSound();
+
     const state = getState();
     const newAmount = state.dailyUserData.currentAmount + amount;
+    
     const now = new Date();
     const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
     const newHistoryEntry = { amount, time, timestamp: now.getTime() };
     const newHistory = [newHistoryEntry, ...state.dailyUserData.history];
-    updateState({ dailyUserData: { currentAmount: newAmount, history: newHistory } });
+
+    // --- LÓGICA DO PROGRESSO SEMANAL RESTAURADA ---
+    const dayOfWeek = now.getDay(); // Domingo = 0, Segunda = 1, etc.
+    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1; // Ajusta para a semana começar na Segunda (índice 0)
+    
+    const dailyPercentage = Math.min(Math.round((newAmount / state.settings.dailyGoal) * 100), 100);
+    
+    const newWeeklyProgress = [...state.persistentUserData.weeklyProgress];
+    newWeeklyProgress[dayIndex].p = dailyPercentage;
+    // --- FIM DA LÓGICA RESTAURADA ---
+
+    updateState({
+        dailyUserData: {
+            currentAmount: newAmount,
+            history: newHistory
+        },
+        persistentUserData: {
+            // Mantém as outras informações persistentes (como conquistas) e atualiza o progresso.
+            ...state.persistentUserData,
+            weeklyProgress: newWeeklyProgress
+        }
+    });
+    
     updateDynamicContent();
     checkAndUnlockAchievements();
 }
 
 /**
- * Lida com a ativação/desativação dos lembretes, direcionando para
- * o fluxo correto dependendo do sistema operacional.
+ * Lida com a ativação/desativação dos lembretes.
  */
 function handleReminderToggle(event) {
     const isEnabled = event.target.checked;
@@ -34,10 +59,8 @@ function handleReminderToggle(event) {
     if (!isEnabled) return;
 
     if (isIOS) {
-        // No iOS, abre o modal para criar o evento no calendário.
         showCalendarReminderModal();
     } else {
-        // Em outros sistemas, usa as notificações push padrão.
         if (Notification.permission !== 'granted') {
             Notification.requestPermission().then(permission => {
                 if (permission !== 'granted') {
@@ -82,7 +105,7 @@ function setupEventListeners() {
             case 'addCustomWater': confirmAddWater(); break;
             case 'closeModal': closeAllModals(); break;
             case 'enterReorderMode': enterReorderMode(); break;
-            case 'createCalendarReminder': // Nova ação
+            case 'createCalendarReminder':
                 createHourlyReminder();
                 closeAllModals();
                 break;
