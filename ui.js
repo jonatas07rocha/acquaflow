@@ -1,5 +1,6 @@
 import { themes } from './themes.js';
 import { getState, updateState } from './state.js';
+import { playAchievementSound } from './audio.js';
 
 let sortableInstance = null;
 
@@ -13,29 +14,30 @@ const widgetTemplates = {
 
 const modalTemplates = {
     addWater: () => `<div id="add-water-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-xs text-center"><h2 class="text-xl font-bold mb-4">Adicionar Água</h2><p class="text-sm opacity-80 mb-4">Digite a quantidade em ml.</p><input type="number" id="custom-amount" class="w-full border-2 border-white/20 bg-white/10 rounded-lg p-3 text-center text-2xl text-white" placeholder="250"><div class="flex gap-3 mt-6"><button data-action="closeModal" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors">Cancelar</button><button data-action="addCustomWater" class="w-full main-add-button text-white font-bold py-3 rounded-lg">Confirmar</button></div></div></div>`,
-    settings: (state) => `<div id="settings-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-sm text-left"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold">Configurações</h2><button data-action="closeModal" class="p-1 rounded-full hover:bg-white/20"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="space-y-6"><div><button data-action="enterReorderMode" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"><i data-lucide="move" class="w-4 h-4 mr-2"></i>Reorganizar Widgets</button></div><div class="flex justify-between items-center"><div><label for="goal-input" class="font-semibold">Meta Diária (ml)</label><p class="text-xs opacity-70">Defina o seu objetivo de hidratação.</p></div><input type="number" id="goal-input" class="w-24 bg-white/10 border-2 border-white/20 rounded-lg p-2 text-center" value="${state.settings.dailyGoal}"></div><div class="flex justify-between items-center"><div><h3 class="font-semibold">Lembretes</h3><p class="text-xs opacity-70">Receber notificações para beber água.</p></div><label class="switch"><input type="checkbox" id="reminders-toggle" ${state.settings.reminders ? 'checked' : ''}><span class="slider"></span></label></div><div><h3 class="font-semibold mb-2">Tema</h3><div class="flex gap-4">${Object.keys(themes).map(key => `<div data-action="selectTheme" data-theme="${key}" class="theme-selector-item cursor-pointer"><div class="w-10 h-10 rounded-full border-2 ${state.settings.theme === key ? 'border-white' : 'border-transparent'}" style="background: linear-gradient(135deg, ${themes[key].gradientFrom}, ${themes[key].gradientTo});"></div><p class="text-xs text-center mt-1 pointer-events-none">${themes[key].name}</p></div>`).join('')}</div></div></div><button data-action="saveSettings" class="w-full main-add-button text-white font-bold py-3 mt-8 rounded-lg">Salvar e Fechar</button></div></div>`
+    settings: (state) => {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const reminderText = isIOS 
+            ? 'No iOS, os lembretes são criados no seu Calendário.' 
+            : 'Receber notificações para beber água.';
+        return `<div id="settings-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-sm text-left"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold">Configurações</h2><button data-action="closeModal" class="p-1 rounded-full hover:bg-white/20"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="space-y-6"><div><button data-action="enterReorderMode" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"><i data-lucide="move" class="w-4 h-4 mr-2"></i>Reorganizar Widgets</button></div><div class="flex justify-between items-center"><div><label for="goal-input" class="font-semibold">Meta Diária (ml)</label><p class="text-xs opacity-70">Defina o seu objetivo de hidratação.</p></div><input type="number" id="goal-input" class="w-24 bg-white/10 border-2 border-white/20 rounded-lg p-2 text-center" value="${state.settings.dailyGoal}"></div><div class="flex justify-between items-center"><div><h3 class="font-semibold">Lembretes</h3><p class="text-xs opacity-70">${reminderText}</p></div><label class="switch"><input type="checkbox" id="reminders-toggle" ${state.settings.reminders ? 'checked' : ''}><span class="slider"></span></label></div><div><h3 class="font-semibold mb-2">Tema</h3><div class="flex gap-4">${Object.keys(themes).map(key => `<div data-action="selectTheme" data-theme="${key}" class="theme-selector-item cursor-pointer"><div class="w-10 h-10 rounded-full border-2 ${state.settings.theme === key ? 'border-white' : 'border-transparent'}" style="background: linear-gradient(135deg, ${themes[key].gradientFrom}, ${themes[key].gradientTo});"></div><p class="text-xs text-center mt-1 pointer-events-none">${themes[key].name}</p></div>`).join('')}</div></div></div><button data-action="saveSettings" class="w-full main-add-button text-white font-bold py-3 mt-8 rounded-lg">Salvar e Fechar</button></div></div>`;
+    },
+    calendarReminder: () => `<div id="calendar-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-xs text-center"><h2 class="text-xl font-bold mb-4">Lembretes no Calendário</h2><p class="text-sm opacity-80 mb-6">Para garantir os lembretes no seu iPhone, criaremos um evento no seu calendário que o notificará a cada hora. Deseja fazer isso agora?</p><div class="flex gap-3 mt-6"><button data-action="closeModal" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors">Agora Não</button><button data-action="createCalendarReminder" class="w-full main-add-button text-white font-bold py-3 rounded-lg">Sim, Criar</button></div></div></div>`
 };
 
 export function renderDashboard() {
     const state = getState();
     const container = document.getElementById('widget-container');
     const header = document.getElementById('date-header');
-    
     if (!container || !header) return;
-
     container.innerHTML = '';
-    
     const today = new Date();
     header.textContent = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-
     applyTheme(state.settings.theme);
-    
     state.settings.widgetOrder.forEach(widgetId => {
         if (widgetTemplates[widgetId]) {
             container.innerHTML += widgetTemplates[widgetId](state);
         }
     });
-    
     updateProgressCircle();
     lucide.createIcons();
     setupScrollAnimations();
@@ -54,18 +56,13 @@ function updateProgressCircle() {
 
 export function updateDynamicContent() {
     const state = getState();
-    
     const currentAmountText = document.getElementById('current-amount-text');
     if (currentAmountText) currentAmountText.textContent = state.dailyUserData.currentAmount;
-    
     const percentageText = document.getElementById('percentage-text');
     if (percentageText) percentageText.textContent = `${Math.round((state.dailyUserData.currentAmount / state.settings.dailyGoal) * 100)}%`;
-    
     updateProgressCircle();
-
     const remainingText = document.getElementById('remaining-text');
     if (remainingText) remainingText.textContent = `${Math.max(0, state.settings.dailyGoal - state.dailyUserData.currentAmount)} ml`;
-
     const historyList = document.getElementById('history-list');
     if (historyList) {
         historyList.innerHTML = state.dailyUserData.history.map(item => `<div class="glass-panel rounded-lg p-3 flex justify-between items-center text-sm hover:bg-white/20"><div class="flex items-center"><i data-lucide="droplet" class="w-4 h-4 mr-3 text-[var(--color-accent-light)]"></i><span class="font-semibold">+ ${item.amount} ml</span></div><span class="text-xs opacity-70">${item.time}</span></div>`).join('') || '<p class="text-sm text-center opacity-60 py-4">Nenhum registo hoje.</p>';
@@ -97,6 +94,12 @@ export function showSettingsModal() {
     lucide.createIcons();
 }
 
+export function showCalendarReminderModal() {
+    closeAllModals();
+    document.body.insertAdjacentHTML('beforeend', modalTemplates.calendarReminder());
+    lucide.createIcons();
+}
+
 export function closeAllModals() {
     document.querySelectorAll('.modal-container').forEach(modal => modal.remove());
 }
@@ -106,7 +109,6 @@ export function enterReorderMode() {
     document.body.classList.add('reorder-mode');
     document.getElementById('reorder-button-container').classList.remove('hidden');
     document.getElementById('settings-button').classList.add('hidden');
-    
     const container = document.getElementById('widget-container');
     if (sortableInstance) sortableInstance.destroy();
     sortableInstance = new Sortable(container, {
@@ -120,13 +122,10 @@ export function enterReorderMode() {
 export function saveLayout() {
     const container = document.getElementById('widget-container');
     const newOrder = [...container.children].map(el => el.dataset.widgetId);
-    
     updateState({ settings: { widgetOrder: newOrder } });
-    
     document.body.classList.remove('reorder-mode');
     document.getElementById('reorder-button-container').classList.add('hidden');
     document.getElementById('settings-button').classList.remove('hidden');
-    
     if (sortableInstance) {
         sortableInstance.destroy();
         sortableInstance = null;
@@ -147,28 +146,13 @@ function setupScrollAnimations() {
     animatedElements.forEach(el => observer.observe(el));
 }
 
-/**
- * Mostra uma notificação (toast) de conquista desbloqueada.
- * @param {object} achievement - O objeto da conquista que foi desbloqueada.
- */
 export function showAchievementToast(achievement) {
     const toastId = `toast-${Date.now()}`;
-    const toastHTML = `
-        <div id="${toastId}" class="achievement-toast fixed bottom-5 right-5 bg-amber-500 text-black p-4 rounded-xl shadow-lg flex items-center max-w-xs z-50">
-            <i data-lucide="${achievement.icon}" class="w-8 h-8 mr-4"></i>
-            <div>
-                <p class="font-bold">Conquista Desbloqueada!</p>
-                <p class="text-sm">${achievement.n}</p>
-            </div>
-        </div>
-    `;
-
+    const toastHTML = `<div id="${toastId}" class="achievement-toast fixed bottom-5 right-5 bg-amber-500 text-black p-4 rounded-xl shadow-lg flex items-center max-w-xs z-50"><i data-lucide="${achievement.icon}" class="w-8 h-8 mr-4"></i><div><p class="font-bold">Conquista Desbloqueada!</p><p class="text-sm">${achievement.n}</p></div></div>`;
     document.body.insertAdjacentHTML('beforeend', toastHTML);
     lucide.createIcons();
-
+    playAchievementSound();
     const toastElement = document.getElementById(toastId);
-    
-    // Remove a notificação após 5 segundos
     setTimeout(() => {
         toastElement.style.animation = 'fadeOutRight 0.5s ease forwards';
         setTimeout(() => toastElement.remove(), 500);
