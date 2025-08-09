@@ -1,6 +1,7 @@
 import { getState, updateState } from './state.js';
 import { renderDashboard, showAddWaterModal, showSettingsModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
 import { checkAndUnlockAchievements } from './achievements.js';
+import { playAddWaterSound, playButtonClickSound } from './audio.js'; // Importa os sons
 
 /**
  * Adiciona uma nova entrada de consumo de água e atualiza o estado da aplicação.
@@ -9,13 +10,14 @@ import { checkAndUnlockAchievements } from './achievements.js';
 function addWater(amount) {
     if (amount <= 0 || isNaN(amount)) return;
 
+    playAddWaterSound(); // TOCA O SOM DE GOTA
+
     const state = getState();
     const newAmount = state.dailyUserData.currentAmount + amount;
     
     const now = new Date();
     const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
     
-    // Adicionamos o 'timestamp' para verificações de conquistas baseadas em tempo.
     const newHistoryEntry = { amount, time, timestamp: now.getTime() };
     const newHistory = [newHistoryEntry, ...state.dailyUserData.history];
     
@@ -27,12 +29,11 @@ function addWater(amount) {
     });
     
     updateDynamicContent();
-    checkAndUnlockAchievements(); // <-- A MÁGICA ACONTECE AQUI!
+    checkAndUnlockAchievements();
 }
 
 /**
- * Lida com a ativação/desativação dos lembretes e solicita permissão de notificação se necessário.
- * @param {Event} event - O evento de mudança do input toggle.
+ * Lida com a ativação/desativação dos lembretes.
  */
 function handleReminderToggle(event) {
     const isEnabled = event.target.checked;
@@ -49,7 +50,7 @@ function handleReminderToggle(event) {
 }
 
 /**
- * Confirma e adiciona a quantidade de água customizada inserida no modal.
+ * Confirma e adiciona a quantidade de água customizada.
  */
 function confirmAddWater() {
     const amountInput = document.getElementById('custom-amount');
@@ -70,6 +71,15 @@ function setupEventListeners() {
 
         const action = targetElement.dataset.action;
 
+        // Toca o som de clique para ações principais e interativas
+        const actionsWithSound = [
+            'showSettings', 'saveLayout', 'showAddWater', 'addCustomWater',
+            'closeModal', 'enterReorderMode', 'saveSettings', 'selectTheme'
+        ];
+        if (actionsWithSound.includes(action)) {
+            playButtonClickSound();
+        }
+
         switch(action) {
             case 'showSettings': showSettingsModal(); break;
             case 'saveLayout': saveLayout(); break;
@@ -89,7 +99,7 @@ function setupEventListeners() {
                 updateState({ settings: settingsToUpdate });
                 renderDashboard();
                 closeAllModals();
-                checkAndUnlockAchievements(); // Verifica conquistas caso a meta tenha mudado
+                checkAndUnlockAchievements();
                 break;
             case 'selectTheme':
                 const themeName = targetElement.dataset.theme;
@@ -108,6 +118,7 @@ function setupEventListeners() {
 
     document.body.addEventListener('change', (event) => {
         if (event.target.id === 'reminders-toggle') {
+            playButtonClickSound();
             handleReminderToggle(event);
         }
     });
@@ -127,7 +138,7 @@ function setupEventListeners() {
 function initializeApp() {
     renderDashboard();
     setupEventListeners();
-    checkAndUnlockAchievements(); // Verifica conquistas ao iniciar o app
+    checkAndUnlockAchievements();
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
