@@ -18,8 +18,7 @@ function getInitialState() {
             dailyGoal: 2000,
             reminders: false,
             theme: 'teal',
-            // 'weekly' foi removido da ordem padrão dos widgets.
-            widgetOrder: ['progress', 'stats', 'history', 'achievements', 'tip']
+            widgetOrder: ['progress', 'stats', 'weekly', 'history', 'achievements', 'tip']
         },
         dailyUserData: {
             currentAmount: 0,
@@ -35,30 +34,32 @@ function getInitialState() {
     };
 
     if (savedStateJSON) {
-        const savedState = JSON.parse(savedStateJSON);
+        let savedState = JSON.parse(savedStateJSON);
         
+        // **A CORREÇÃO PRINCIPAL ESTÁ AQUI**
+        // Verifica se a data da última visita é diferente da data de hoje.
         if (savedState.lastVisit !== today) {
+            // É um novo dia! Mantém as configurações e dados persistentes,
+            // mas reseta completamente os dados diários.
+            savedState.dailyUserData = { ...defaultState.dailyUserData };
             savedState.lastVisit = today;
-            savedState.dailyUserData = defaultState.dailyUserData;
             
             const dayOfWeek = new Date().getDay();
+            // Se for segunda-feira (getDay() === 1), reseta também o progresso semanal.
             if (dayOfWeek === 1) {
-                savedState.persistentUserData.weeklyProgress = defaultState.persistentUserData.weeklyProgress;
+                savedState.persistentUserData.weeklyProgress = [ ...defaultState.persistentUserData.weeklyProgress ];
             }
         }
 
+        // Garante que a lista de conquistas esteja sempre atualizada com as do código
         const updatedAchievements = allAchievements.map(defaultAch => {
             const savedAch = savedState.persistentUserData.achievements.find(a => a.id === defaultAch.id);
             return savedAch ? { ...defaultAch, u: savedAch.u } : defaultAch;
         });
         savedState.persistentUserData.achievements = updatedAchievements;
 
-        // Garante que a ordem dos widgets não inclua 'weekly' se não estiver definido
-        if (savedState.settings && savedState.settings.widgetOrder) {
-            savedState.settings.widgetOrder = savedState.settings.widgetOrder.filter(id => id !== 'weekly');
-        }
-
-
+        // Mescla o estado salvo e corrigido com o padrão para garantir que
+        // novas propriedades sejam adicionadas sem perder os dados do usuário.
         return {
             ...defaultState,
             ...savedState,
@@ -85,6 +86,5 @@ export function updateState(newState) {
         persistentUserData: { ...state.persistentUserData, ...newState.persistentUserData }
     };
     localStorage.setItem('acqua-state', JSON.stringify(state));
-    console.log("Estado atualizado:", state);
+    // console.log("Estado atualizado:", state); // Descomente para depurar
 }
-
