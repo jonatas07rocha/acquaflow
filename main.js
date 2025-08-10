@@ -94,6 +94,9 @@ function setupEventListeners() {
                 closeAllModals();
                 break;
             case 'showResetConfirmation':
+                // AQUI ESTÁ A MUDANÇA:
+                // Em vez de apenas mostrar o novo modal, primeiro fechamos todos os outros.
+                closeAllModals(); 
                 showResetConfirmationModal();
                 break;
             case 'confirmReset':
