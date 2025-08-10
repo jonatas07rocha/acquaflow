@@ -1,15 +1,11 @@
-import { getState, updateState } from './state.js';
-import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
+import { getState, updateState, resetState } from './state.js';
+import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, showResetConfirmationModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
 import { checkAndUnlockAchievements } from './achievements.js';
 import { playAddWaterSound, playButtonClickSound } from './audio.js';
 import { createHourlyReminder } from './calendar.js';
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-/**
- * Adiciona uma nova entrada de consumo de água e atualiza o estado da aplicação.
- * @param {number} amount - A quantidade de água em ml a ser adicionada.
- */
 function addWater(amount) {
     if (amount <= 0 || isNaN(amount)) return;
     playAddWaterSound();
@@ -23,9 +19,8 @@ function addWater(amount) {
     const newHistoryEntry = { amount, time, timestamp: now.getTime() };
     const newHistory = [newHistoryEntry, ...state.dailyUserData.history];
 
-    // LÓGICA DO PROGRESSO SEMANAL REINTEGRADA
-    const dayOfWeek = now.getDay(); // Domingo = 0, Segunda = 1, etc.
-    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1; // Ajusta para a semana começar na Segunda (índice 0)
+    const dayOfWeek = now.getDay();
+    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
     
     const dailyPercentage = Math.min(Math.round((newAmount / state.settings.dailyGoal) * 100), 100);
     
@@ -47,9 +42,6 @@ function addWater(amount) {
     checkAndUnlockAchievements();
 }
 
-/**
- * Lida com a ativação/desativação dos lembretes.
- */
 function handleReminderToggle(event) {
     const isEnabled = event.target.checked;
     updateState({ settings: { reminders: isEnabled } });
@@ -70,9 +62,6 @@ function handleReminderToggle(event) {
     }
 }
 
-/**
- * Confirma e adiciona a quantidade de água customizada.
- */
 function confirmAddWater() {
     const amountInput = document.getElementById('custom-amount');
     if (amountInput && amountInput.value) {
@@ -82,16 +71,13 @@ function confirmAddWater() {
     closeAllModals();
 }
 
-/**
- * Configura todos os event listeners da aplicação.
- */
 function setupEventListeners() {
     document.body.addEventListener('click', (event) => {
         const targetElement = event.target.closest('[data-action]');
         if (!targetElement) return;
 
         const action = targetElement.dataset.action;
-        const actionsWithSound = ['showSettings', 'saveLayout', 'showAddWater', 'addCustomWater', 'closeModal', 'enterReorderMode', 'saveSettings', 'selectTheme', 'createCalendarReminder'];
+        const actionsWithSound = ['showSettings', 'saveLayout', 'showAddWater', 'addCustomWater', 'closeModal', 'enterReorderMode', 'saveSettings', 'selectTheme', 'createCalendarReminder', 'showResetConfirmation', 'confirmReset'];
         if (actionsWithSound.includes(action)) {
             playButtonClickSound();
         }
@@ -106,6 +92,12 @@ function setupEventListeners() {
             case 'createCalendarReminder':
                 createHourlyReminder();
                 closeAllModals();
+                break;
+            case 'showResetConfirmation':
+                showResetConfirmationModal();
+                break;
+            case 'confirmReset':
+                resetState();
                 break;
             case 'saveSettings':
                 const newGoal = parseInt(document.getElementById('goal-input').value, 10);
@@ -149,9 +141,6 @@ function setupEventListeners() {
     });
 }
 
-/**
- * Inicializa a aplicação.
- */
 function initializeApp() {
     renderDashboard();
     setupEventListeners();
