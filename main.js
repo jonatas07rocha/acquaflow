@@ -1,8 +1,11 @@
+// jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/main.js
+
 import { getState, updateState, resetState } from './state.js';
 import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, showResetConfirmationModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
 import { checkAndUnlockAchievements } from './achievements.js';
 import { playAddWaterSound, playButtonClickSound } from './audio.js';
 import { createHourlyReminder } from './calendar.js';
+import { updateWeeklyProgress } from './progress.js'; // <-- NOVA IMPORTAÇÃO
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -19,13 +22,8 @@ function addWater(amount) {
     const newHistoryEntry = { amount, time, timestamp: now.getTime() };
     const newHistory = [newHistoryEntry, ...state.dailyUserData.history];
 
-    const dayOfWeek = now.getDay();
-    const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
-    
-    const dailyPercentage = Math.min(Math.round((newAmount / state.settings.dailyGoal) * 100), 100);
-    
-    const newWeeklyProgress = [...state.persistentUserData.weeklyProgress];
-    newWeeklyProgress[dayIndex].p = dailyPercentage;
+    // Utiliza a nova função dedicada para calcular o progresso
+    const newWeeklyProgress = updateWeeklyProgress(state, newAmount);
 
     updateState({
         dailyUserData: {
@@ -94,8 +92,6 @@ function setupEventListeners() {
                 closeAllModals();
                 break;
             case 'showResetConfirmation':
-                // AQUI ESTÁ A MUDANÇA:
-                // Em vez de apenas mostrar o novo modal, primeiro fechamos todos os outros.
                 closeAllModals(); 
                 showResetConfirmationModal();
                 break;
