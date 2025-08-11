@@ -1,6 +1,6 @@
 /**
  * progress.js
- * * Módulo dedicado para lidar com os cálculos de progresso da aplicação.
+ * Módulo dedicado para lidar com os cálculos de progresso da aplicação.
  */
 
 /**
@@ -10,25 +10,30 @@
  * @returns {Array} O novo array de progresso semanal atualizado.
  */
 export function updateWeeklyProgress(state, newDailyAmount) {
-    const now = new Date();
+    console.group("📊 Calculando Progresso Semanal");
+    console.log(`Total diário para cálculo: ${newDailyAmount}ml`);
+    console.log(`Meta diária: ${state.settings.dailyGoal}ml`);
     
-    // Converte o dia da semana para o nosso índice (Segunda = 0, ..., Domingo = 6)
+    const now = new Date();
     const dayOfWeek = now.getDay();
     const dayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
 
-    // Calcula a porcentagem da meta diária, com um teto de 100%
     const dailyPercentage = Math.min(
         Math.round((newDailyAmount / state.settings.dailyGoal) * 100),
         100
     );
 
-    // Cria uma cópia do array de progresso para garantir a imutabilidade do estado
     const newWeeklyProgress = [...state.persistentUserData.weeklyProgress];
     
-    // Atualiza a porcentagem do dia atual
     if (newWeeklyProgress[dayIndex]) {
+        console.log(`Índice do dia da semana: ${dayIndex} (${newWeeklyProgress[dayIndex].day})`);
+        console.log(`Porcentagem calculada: ${dailyPercentage}%`);
         newWeeklyProgress[dayIndex].p = dailyPercentage;
+    } else {
+        console.warn(`Índice de dia inválido: ${dayIndex}`);
     }
-
+    
+    console.log("Resultado do cálculo:", newWeeklyProgress);
+    console.groupEnd();
     return newWeeklyProgress;
 }
