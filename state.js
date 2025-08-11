@@ -9,6 +9,7 @@ const allAchievements = [
 ];
 
 function getInitialState() {
+    console.group("🏁 Inicialização do Estado");
     const today = new Date().toISOString().slice(0, 10);
     const savedStateJSON = localStorage.getItem('acqua-state');
     
@@ -34,6 +35,7 @@ function getInitialState() {
     };
 
     if (savedStateJSON) {
+        console.log("💾 Estado carregado do localStorage.");
         let savedState = JSON.parse(savedStateJSON);
         
         if (savedState.lastVisit !== today) {
@@ -50,7 +52,7 @@ function getInitialState() {
             const daysDifference = (todayDate.getTime() - lastVisitDate.getTime()) / (1000 * 3600 * 24);
 
             if (todayDayIndex < lastDayIndex || daysDifference > 6) {
-                console.log("Nova semana detectada. Resetando o progresso semanal.");
+                console.log("🗓️ Nova semana detectada. Resetando o progresso semanal.");
                 savedState.persistentUserData.weeklyProgress = [ ...defaultState.persistentUserData.weeklyProgress ];
             }
         }
@@ -60,15 +62,21 @@ function getInitialState() {
             return savedAch ? { ...defaultAch, u: savedAch.u } : defaultAch;
         });
         savedState.persistentUserData.achievements = updatedAchievements;
-
-        return {
+        
+        const finalState = {
             ...defaultState,
             ...savedState,
             settings: { ...defaultState.settings, ...savedState.settings },
             persistentUserData: { ...defaultState.persistentUserData, ...savedState.persistentUserData }
         };
+        console.log("✅ Estado final inicializado:", finalState);
+        console.groupEnd();
+        return finalState;
     }
     
+    console.log("✨ Criando estado inicial padrão.");
+    console.log("✅ Estado final inicializado:", defaultState);
+    console.groupEnd();
     return defaultState;
 }
 
@@ -79,33 +87,32 @@ export function getState() {
 }
 
 /**
- * Atualiza o estado global da aplicação com base nas novas informações.
- * Esta versão é mais simples e robusta para evitar a perda de dados em objetos aninhados.
- * @param {object} updates - Um objeto contendo as chaves do estado a serem atualizadas.
+ * Atualiza o estado global da aplicação.
+ * Esta versão simplificada garante que todos os dados aninhados sejam mesclados corretamente.
+ * @param {object} updates - Objeto com as chaves de estado a serem atualizadas.
  */
 export function updateState(updates) {
-    // Começa com uma cópia do estado atual
-    const newState = { ...state };
+    console.group(`🔄 [CORRIGIDO] Atualizando Estado`);
+    console.log("📦 Objeto de atualização recebido:", updates);
+    console.log("🧠 Estado ANTES:", JSON.parse(JSON.stringify(state))); // Cópia profunda para log preciso
 
-    // Itera sobre as chaves do objeto de atualização
-    for (const key in updates) {
-        // Se a chave existe e é um objeto (mas não um array), faz um merge profundo.
-        // Isso garante que dados aninhados como em 'persistentUserData' sejam combinados corretamente.
-        if (typeof updates[key] === 'object' && !Array.isArray(updates[key]) && state[key]) {
-            newState[key] = { ...state[key], ...updates[key] };
-        } else {
-            // Para outras chaves (valores primitivos ou arrays), simplesmente substitui.
-            newState[key] = updates[key];
-        }
-    }
+    // Lógica de merge robusta e explícita
+    const newState = {
+        ...state,
+        ...updates,
+        dailyUserData: { ...state.dailyUserData, ...(updates.dailyUserData || {}) },
+        persistentUserData: { ...state.persistentUserData, ...(updates.persistentUserData || {}) },
+        settings: { ...state.settings, ...(updates.settings || {}) },
+    };
     
-    // Atualiza a variável de estado global e o localStorage
     state = newState;
     localStorage.setItem('acqua-state', JSON.stringify(state));
+    console.log("🚀 Estado DEPOIS:", JSON.parse(JSON.stringify(state)));
+    console.groupEnd();
 }
 
 export function resetState() {
-    console.log("Resetando o estado da aplicação...");
+    console.log("🗑️ Resetando o estado da aplicação...");
     localStorage.removeItem('acqua-state');
     setTimeout(() => {
         location.reload();
