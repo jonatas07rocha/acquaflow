@@ -1,3 +1,5 @@
+// jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/ui.js
+
 import { themes } from './themes.js';
 import { getState, updateState } from './state.js';
 import { playAchievementSound } from './audio.js';
@@ -29,12 +31,10 @@ const modalTemplates = {
     settings: (state) => {
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const reminderText = isIOS ? 'No iOS, os lembretes são criados no seu Calendário.' : 'Receber notificações para beber água.';
-        // O BOTÃO DE RESET É ADICIONADO AQUI
         return `<div id="settings-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-sm text-left"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-bold">Configurações</h2><button data-action="closeModal" class="p-1 rounded-full hover:bg-white/20"><i data-lucide="x" class="w-5 h-5"></i></button></div><div class="space-y-6"><div><button data-action="enterReorderMode" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"><i data-lucide="move" class="w-4 h-4 mr-2"></i>Reorganizar Widgets</button></div><div class="flex justify-between items-center"><div><label for="goal-input" class="font-semibold">Meta Diária (ml)</label><p class="text-xs opacity-70">Defina o seu objetivo de hidratação.</p></div><input type="number" id="goal-input" class="w-24 bg-white/10 border-2 border-white/20 rounded-lg p-2 text-center" value="${state.settings.dailyGoal}"></div><div class="flex justify-between items-center"><div><h3 class="font-semibold">Lembretes</h3><p class="text-xs opacity-70">${reminderText}</p></div><label class="switch"><input type="checkbox" id="reminders-toggle" ${state.settings.reminders ? 'checked' : ''}><span class="slider"></span></label></div><div><h3 class="font-semibold mb-2">Tema</h3><div class="flex gap-4">${Object.keys(themes).map(key => `<div data-action="selectTheme" data-theme="${key}" class="theme-selector-item cursor-pointer"><div class="w-10 h-10 rounded-full border-2 ${state.settings.theme === key ? 'border-white' : 'border-transparent'}" style="background: linear-gradient(135deg, ${themes[key].gradientFrom}, ${themes[key].gradientTo});"></div><p class="text-xs text-center mt-1 pointer-events-none">${themes[key].name}</p></div>`).join('')}</div></div><div class="border-t border-white/10 my-4"></div><div><button data-action="showResetConfirmation" class="w-full bg-red-500/20 text-red-300 font-semibold py-3 rounded-lg hover:bg-red-500/30 transition-colors flex items-center justify-center"><i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>Resetar Progresso</button></div></div><button data-action="saveSettings" class="w-full main-add-button text-white font-bold py-3 mt-8 rounded-lg">Salvar e Fechar</button></div></div>`;
     },
     calendarReminder: () => `<div id="calendar-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-xs text-center"><h2 class="text-xl font-bold mb-4">Lembretes no Calendário</h2><p class="text-sm opacity-80 mb-6">Para garantir os lembretes no seu iPhone, criaremos um evento no seu calendário que o notificará a cada hora. Deseja fazer isso agora?</p><div class="flex gap-3 mt-6"><button data-action="closeModal" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors">Agora Não</button><button data-action="createCalendarReminder" class="w-full main-add-button text-white font-bold py-3 rounded-lg">Sim, Criar</button></div></div></div>`,
     info: (title, message) => `<div id="info-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-xs text-center"><h2 class="text-xl font-bold mb-4">${title}</h2><p class="text-sm opacity-80 mb-6">${message}</p><button data-action="closeModal" class="w-full main-add-button text-white font-bold py-3 rounded-lg">Fechar</button></div></div>`,
-    // MODAL DE CONFIRMAÇÃO DO RESET
     resetConfirmation: () => `<div id="reset-modal" class="modal-container fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50"><div class="glass-panel p-6 rounded-2xl shadow-xl w-11/12 max-w-xs text-center"><h2 class="text-xl font-bold mb-4">Você tem certeza?</h2><p class="text-sm opacity-80 mb-6">Todo o seu progresso, incluindo conquistas e temas, será perdido permanentemente. Esta ação não pode ser desfeita.</p><div class="flex gap-3 mt-6"><button data-action="closeModal" class="w-full bg-white/10 font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors">Cancelar</button><button data-action="confirmReset" class="w-full bg-red-600 text-white font-bold py-3 rounded-lg">Sim, Resetar</button></div></div></div>`
 };
 
@@ -84,12 +84,18 @@ export function updateDynamicContent() {
     }
     const weeklyChart = document.getElementById('weekly-chart');
     if (weeklyChart) {
-        state.persistentUserData.weeklyProgress.forEach((day, index) => {
-            const dayBar = weeklyChart.children[index]?.querySelector('.chart-bar-fill');
-            if (dayBar) {
-                dayBar.style.height = `${day.p}%`;
-            }
-        });
+        // AQUI ESTÁ A CORREÇÃO:
+        // Em vez de manipular o estilo de cada barra individualmente,
+        // recriamos o conteúdo do gráfico. Isso é mais robusto e garante
+        // que a interface sempre reflita o estado mais recente.
+        weeklyChart.innerHTML = state.persistentUserData.weeklyProgress.map(day => `
+            <div class="flex flex-col items-center w-8">
+                <div class="w-full h-full flex items-end">
+                    <div class="chart-bar-fill w-full rounded-t-sm" style="height: ${day.p}%"></div>
+                </div>
+                <span class="text-xs opacity-70 mt-1">${day.day}</span>
+            </div>
+        `).join('');
     }
 }
 
@@ -108,7 +114,6 @@ export function showAddWaterModal() { closeAllModals(); document.body.insertAdja
 export function showSettingsModal() { closeAllModals(); const state = getState(); document.body.insertAdjacentHTML('beforeend', modalTemplates.settings(state)); lucide.createIcons(); }
 export function showCalendarReminderModal() { closeAllModals(); document.body.insertAdjacentHTML('beforeend', modalTemplates.calendarReminder()); lucide.createIcons(); }
 export function showInfoModal(title, message) { closeAllModals(); document.body.insertAdjacentHTML('beforeend', modalTemplates.info(title, message)); lucide.createIcons(); }
-// FUNÇÃO PARA MOSTRAR O MODAL DE CONFIRMAÇÃO
 export function showResetConfirmationModal() { closeAllModals(); document.body.insertAdjacentHTML('beforeend', modalTemplates.resetConfirmation()); lucide.createIcons(); }
 export function closeAllModals() { document.querySelectorAll('.modal-container').forEach(modal => modal.remove()); }
 
