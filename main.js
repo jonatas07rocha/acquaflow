@@ -1,11 +1,8 @@
-// jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/main.js
-
 import { getState, updateState, resetState } from './state.js';
 import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, showResetConfirmationModal, enterReorderMode, saveLayout, applyTheme, closeAllModals } from './ui.js';
 import { checkAndUnlockAchievements } from './achievements.js';
 import { playAddWaterSound, playButtonClickSound } from './audio.js';
 import { createHourlyReminder } from './calendar.js';
-import { updateWeeklyProgress } from './progress.js';
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -22,21 +19,13 @@ function addWater(amount) {
     const newHistoryEntry = { amount, time, timestamp: now.getTime() };
     const newHistory = [newHistoryEntry, ...state.dailyUserData.history];
 
-    const newWeeklyProgress = updateWeeklyProgress(state, newAmount);
-
     updateState({
         dailyUserData: {
             currentAmount: newAmount,
             history: newHistory
-        },
-        persistentUserData: {
-            ...state.persistentUserData,
-            weeklyProgress: newWeeklyProgress
         }
     });
     
-    // O redesenho completo garante que todas as partes da UI,
-    // incluindo o gráfico semanal desacoplado, sejam atualizadas.
     renderDashboard();
     
     checkAndUnlockAchievements();
