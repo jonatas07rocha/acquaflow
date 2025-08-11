@@ -1,10 +1,10 @@
-// jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/main.js
-
 import { getState, updateState, resetState } from './state.js';
-import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, showResetConfirmationModal, showAchievementInfoModal, enterReorderMode, saveLayout, applyTheme, closeAllModals } from './ui.js';
+import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, showResetConfirmationModal, showAchievementInfoModal, showReminderConfirmationModal, enterReorderMode, saveLayout, applyTheme, closeAllModals } from './ui.js';
 import { checkAndUnlockAchievements } from './achievements.js';
 import { playAddWaterSound, playButtonClickSound } from './audio.js';
 import { createHourlyReminder } from './calendar.js';
+// Importa as novas funções do serviço de lembretes.
+import { startReminderService, stopReminderService } from './reminders.js';
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -32,22 +32,35 @@ function addWater(amount) {
     checkAndUnlockAchievements();
 }
 
+/**
+ * Lida com a ativação e desativação dos lembretes.
+ * @param {Event} event - O evento do clique no toggle.
+ */
 function handleReminderToggle(event) {
     const isEnabled = event.target.checked;
     updateState({ settings: { reminders: isEnabled } });
 
-    if (!isEnabled) return;
-
     if (isIOS) {
-        showCalendarReminderModal();
+        // Em dispositivos iOS, sempre mostra o modal do calendário.
+        if (isEnabled) {
+            showCalendarReminderModal();
+        }
     } else {
-        if (Notification.permission !== 'granted') {
+        // Em outros dispositivos, usa o sistema de notificações do navegador.
+        if (isEnabled) {
             Notification.requestPermission().then(permission => {
-                if (permission !== 'granted') {
+                if (permission === 'granted') {
+                    startReminderService();
+                    showReminderConfirmationModal(); // Mostra o feedback para o usuário.
+                } else {
+                    // Se a permissão for negada, desfaz a ação.
                     event.target.checked = false;
                     updateState({ settings: { reminders: false } });
                 }
             });
+        } else {
+            // Se desativado, para o serviço.
+            stopReminderService();
         }
     }
 }
@@ -93,7 +106,6 @@ function setupEventListeners() {
             case 'confirmReset':
                 resetState();
                 break;
-            // NOVA AÇÃO PARA MOSTRAR DETALHES DA CONQUISTA
             case 'showAchievementInfo':
                 const achId = targetElement.dataset.id;
                 const achievement = getState().persistentUserData.achievements.find(a => a.id === achId);
@@ -148,6 +160,12 @@ function initializeApp() {
     renderDashboard();
     setupEventListeners();
     checkAndUnlockAchievements();
+    
+    // Se os lembretes já estavam ativados, inicia o serviço ao carregar o app.
+    if (getState().settings.reminders && !isIOS && Notification.permission === 'granted') {
+        startReminderService();
+    }
+
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
             .then(registration => console.log('Service Worker registrado com sucesso:', registration))
