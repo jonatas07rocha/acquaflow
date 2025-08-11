@@ -1,11 +1,11 @@
 // jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/main.js
 
 import { getState, updateState, resetState } from './state.js';
-import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, showResetConfirmationModal, enterReorderMode, saveLayout, applyTheme, updateDynamicContent, closeAllModals } from './ui.js';
+import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, showResetConfirmationModal, enterReorderMode, saveLayout, applyTheme, closeAllModals } from './ui.js';
 import { checkAndUnlockAchievements } from './achievements.js';
 import { playAddWaterSound, playButtonClickSound } from './audio.js';
 import { createHourlyReminder } from './calendar.js';
-import { updateWeeklyProgress } from './progress.js'; // <-- NOVA IMPORTAÇÃO
+import { updateWeeklyProgress } from './progress.js';
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -22,7 +22,6 @@ function addWater(amount) {
     const newHistoryEntry = { amount, time, timestamp: now.getTime() };
     const newHistory = [newHistoryEntry, ...state.dailyUserData.history];
 
-    // Utiliza a nova função dedicada para calcular o progresso
     const newWeeklyProgress = updateWeeklyProgress(state, newAmount);
 
     updateState({
@@ -36,7 +35,12 @@ function addWater(amount) {
         }
     });
     
-    updateDynamicContent();
+    // CORREÇÃO:
+    // Em vez de uma atualização parcial, fazemos um redesenho completo do dashboard.
+    // Isso garante que TODOS os widgets, incluindo o de progresso semanal,
+    // sejam atualizados de forma consistente com o novo estado.
+    renderDashboard();
+    
     checkAndUnlockAchievements();
 }
 
