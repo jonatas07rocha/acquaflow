@@ -1,8 +1,9 @@
+// jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/achievements.js
+
 import { getState, updateState } from './state.js';
 import { showAchievementToast } from './ui.js';
-import { playAchievementSound } from './audio.js'; // Importa o som
+import { playAchievementSound } from './audio.js';
 
-// Objeto que contém as regras de verificação para cada conquista.
 const achievementChecks = {
     'FIRST_DRINK': (state) => state.dailyUserData.history.length > 0,
     'MORNING_HYDRATION': (state) => state.dailyUserData.history.some(item => new Date(item.timestamp).getHours() < 12),
@@ -12,9 +13,6 @@ const achievementChecks = {
     'PERFECT_1000': (state) => state.dailyUserData.currentAmount >= 1000,
 };
 
-/**
- * Verifica todas as conquistas e desbloqueia as que tiveram suas condições atendidas.
- */
 export function checkAndUnlockAchievements() {
     const state = getState();
     let newAchievementsUnlocked = false;
@@ -29,7 +27,6 @@ export function checkAndUnlockAchievements() {
                 newAchievementsUnlocked = true;
                 console.log(`Conquista desbloqueada: ${ach.n}`);
                 showAchievementToast(ach);
-                playAchievementSound(); // TOCA O SOM DE CONQUISTA
                 return { ...ach, u: true };
             }
         }
@@ -38,13 +35,16 @@ export function checkAndUnlockAchievements() {
     });
 
     if (newAchievementsUnlocked) {
+        // CORREÇÃO:
+        // Agora, garantimos que o progresso semanal (`weeklyProgress`) e outros dados
+        // persistentes sejam mantidos ao atualizar apenas a lista de conquistas.
         updateState({
             persistentUserData: {
+                ...state.persistentUserData,
                 achievements: updatedAchievements
             }
         });
         
-        // Atualiza a UI do widget de conquistas
         const achievementsWidget = document.querySelector('[data-widget-id="achievements"]');
         if (achievementsWidget) {
             const grid = achievementsWidget.querySelector('#achievements-grid');
@@ -62,4 +62,3 @@ export function checkAndUnlockAchievements() {
         }
     }
 }
-
