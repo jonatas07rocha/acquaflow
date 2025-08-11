@@ -1,39 +1,9 @@
-// jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/ui.js
-
 import { themes } from './themes.js';
 import { getState, updateState } from './state.js';
 import { playAchievementSound } from './audio.js';
 import { tips } from './tips.js';
 
 let sortableInstance = null;
-
-/**
- * Renderiza o gráfico de progresso semanal de forma independente,
- * lendo os dados mais recentes diretamente do localStorage.
- * Isso garante que o gráfico sempre reflita o estado real.
- */
-function renderWeeklyChart() {
-    const weeklyChartEl = document.getElementById('weekly-chart');
-    if (!weeklyChartEl) return;
-
-    try {
-        const savedState = JSON.parse(localStorage.getItem('acqua-state'));
-        if (savedState && savedState.persistentUserData && savedState.persistentUserData.weeklyProgress) {
-            const weeklyProgress = savedState.persistentUserData.weeklyProgress;
-            weeklyChartEl.innerHTML = weeklyProgress.map(day => `
-                <div class="flex flex-col items-center w-8">
-                    <div class="w-full h-full flex items-end">
-                        <div class="chart-bar-fill w-full rounded-t-sm" style="height: ${day.p}%"></div>
-                    </div>
-                    <span class="text-xs opacity-70 mt-1">${day.day}</span>
-                </div>
-            `).join('');
-        }
-    } catch (e) {
-        console.error("Erro ao renderizar o gráfico semanal a partir do localStorage:", e);
-    }
-}
-
 
 function getDailyTip() {
     const now = new Date();
@@ -48,6 +18,7 @@ function getDailyTip() {
 const widgetTemplates = {
     progress: (state) => `<section data-widget-id="progress" class="widget glass-panel rounded-3xl p-6 my-4 flex flex-col items-center animate-on-scroll"><i data-lucide="grip-vertical" class="drag-handle"></i><div class="relative w-56 h-56"><svg class="w-full h-full" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="12"/><circle id="progress-circle" class="progress-ring__circle" cx="60" cy="60" r="54" fill="none" stroke-width="12" stroke-linecap="round"/></svg><div class="absolute inset-0 flex flex-col items-center justify-center text-center"><div id="current-amount-text" class="text-5xl font-bold">${state.dailyUserData.currentAmount}</div><div class="text-lg font-light -mt-1">ml</div><div id="percentage-text" class="text-sm opacity-80 mt-2">${Math.round((state.dailyUserData.currentAmount / state.settings.dailyGoal) * 100)}%</div></div></div><button data-action="showAddWater" class="main-add-button text-white font-bold py-4 w-full mt-6 rounded-full flex items-center justify-center mx-auto"><i data-lucide="droplet" class="w-5 h-5 mr-2"></i>Adicionar Água</button></section>`,
     stats: (state) => `<div data-widget-id="stats" class="widget grid grid-cols-2 gap-4 mb-4 animate-on-scroll"><i data-lucide="grip-vertical" class="drag-handle"></i><div class="glass-panel rounded-2xl p-4 flex items-center"><div class="p-3 rounded-full mr-4 bg-[color-mix(in_srgb,var(--color-accent)_30%,transparent)]"><i data-lucide="target" class="w-5 h-5 text-[var(--color-accent-light)]"></i></div><div><div class="text-xs opacity-70">Meta Diária</div><div id="goal-text" class="text-lg font-semibold">${state.settings.dailyGoal} ml</div></div></div><div class="glass-panel rounded-2xl p-4 flex items-center"><div class="p-3 rounded-full mr-4 bg-[color-mix(in_srgb,var(--color-accent)_30%,transparent)]"><i data-lucide="hourglass" class="w-5 h-5 text-[var(--color-accent-light)]"></i></div><div><div class="text-xs opacity-70">Restante</div><div id="remaining-text" class="text-lg font-semibold">${Math.max(0, state.settings.dailyGoal - state.dailyUserData.currentAmount)} ml</div></div></div></div>`,
+    // LÓGICA DE RENDERIZAÇÃO CORRIGIDA E SIMPLIFICADA
     activity: (state) => `
         <section data-widget-id="activity" class="widget glass-panel rounded-2xl p-4 mb-4 animate-on-scroll relative">
             <i data-lucide="grip-vertical" class="drag-handle"></i>
@@ -57,8 +28,16 @@ const widgetTemplates = {
             </div>
             
             <h3 class="text-sm font-semibold opacity-80 mb-2">Progresso Semanal</h3>
-            // O gráfico agora é apenas uma moldura vazia, a ser preenchida pela função renderWeeklyChart()
-            <div id="weekly-chart" class="flex justify-between items-end h-32 px-2 mb-4"></div>
+            <div id="weekly-chart" class="flex justify-between items-end h-32 px-2 mb-4">
+                ${state.persistentUserData.weeklyProgress.map(day => `
+                    <div class="flex flex-col items-center w-8">
+                        <div class="w-full h-full flex items-end">
+                            <div class="chart-bar-fill w-full rounded-t-sm" style="height: ${day.p}%"></div>
+                        </div>
+                        <span class="text-xs opacity-70 mt-1">${day.day}</span>
+                    </div>
+                `).join('')}
+            </div>
 
             <div class="border-t border-white/20 my-4"></div>
 
@@ -99,12 +78,7 @@ export function renderDashboard() {
         }
     });
     
-    // ATUALIZAÇÃO DO FLUXO
-    // Após renderizar a estrutura principal, chamamos as funções
-    // que preenchem os dados de forma independente.
     updateProgressCircle();
-    renderWeeklyChart(); // <-- A "mini-aplicação" do gráfico é chamada aqui.
-
     lucide.createIcons();
     setupScrollAnimations();
 }
