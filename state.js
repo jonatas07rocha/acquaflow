@@ -1,30 +1,17 @@
-// jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/state.js
-
-// LISTA DE CONQUISTAS EXPANDIDA
+// LISTA DE CONQUISTAS REFINADA E COM DESCRIÇÕES
 const allAchievements = [
-    // Conquistas de Início e Volume
-    { id: 'FIRST_DRINK',    n: 'Primeiro Gole',      u: false, icon: 'cup-soda' },
-    { id: 'PERFECT_1000',   n: '1 Litro!',           u: false, icon: 'award' },
-    { id: 'VOLUME_2L',      n: '2 Litros!',          u: false, icon: 'award' },
-    { id: 'VOLUME_3L',      n: '3 Litros!',          u: false, icon: 'trophy' },
-    
-    // Conquistas de Meta
-    { id: 'GOAL_REACHED',   n: 'Meta Atingida!',     u: false, icon: 'target' },
-    { id: 'OVERACHIEVER',   n: 'Super-Hidratado',    u: false, icon: 'trending-up' },
-    
-    // Conquistas de Frequência e Horário
-    { id: 'HYDRATION_PRO',  n: 'Hidratação PRO',     u: false, icon: 'sparkles' },
-    { id: 'MORNING_HYDRATION', n: 'Força Matinal',    u: false, icon: 'sunrise' },
-    { id: 'LATE_NIGHT_HYDRATION', n: 'Guerreiro da Noite', u: false, icon: 'moon' },
-
-    // Conquistas de Sequência (Streak)
-    { id: 'STREAK_3',       n: 'Embalado!',          u: false, icon: 'flame' },
-    { id: 'STREAK_7',       n: 'Implacável',         u: false, icon: 'gem' },
-    { id: 'PERFECT_WEEK',   n: 'Semana Perfeita',    u: false, icon: 'shield-check' },
-
-    // Conquistas de Interação com o App
-    { id: 'THEME_MASTER',   n: 'Artista',            u: false, icon: 'palette' },
-    { id: 'ORGANIZER',      n: 'Organizador',        u: false, icon: 'layout-template' },
+    { id: 'FIRST_DRINK',    n: 'Primeiro Gole',      desc: 'Beba água pela primeira vez para começar sua jornada.', u: false, icon: 'cup-soda' },
+    { id: 'PERFECT_1000',   n: '1 Litro',            desc: 'Beba 1 litro de água em um único dia.', u: false, icon: 'award' },
+    { id: 'VOLUME_2L',      n: '2 Litros',           desc: 'Beba 2 litros de água em um único dia.', u: false, icon: 'award' },
+    { id: 'VOLUME_3L',      n: '3 Litros',           desc: 'Um verdadeiro atleta! Beba 3 litros de água em um dia.', u: false, icon: 'trophy' },
+    { id: 'GOAL_REACHED',   n: 'Meta Atingida',      desc: 'Atinja sua meta diária de hidratação.', u: false, icon: 'target' },
+    { id: 'OVERACHIEVER',   n: 'Super-Hidratado',    desc: 'Supere sua meta diária em pelo menos 50%.', u: false, icon: 'trending-up' },
+    { id: 'HYDRATION_PRO',  n: 'Hidratação PRO',     desc: 'Beba água 5 ou mais vezes em um único dia.', u: false, icon: 'sparkles' },
+    { id: 'MORNING_HYDRATION', n: 'Força Matinal',    desc: 'Beba água antes do meio-dia para começar bem.', u: false, icon: 'sunrise' },
+    { id: 'LATE_NIGHT_HYDRATION', n: 'Guerreiro da Noite', desc: 'Faça seu último registro de água depois das 22h.', u: false, icon: 'moon' },
+    { id: 'STREAK_3',       n: 'Embalado',           desc: 'Mantenha o ritmo e use o aplicativo por 3 dias seguidos.', u: false, icon: 'flame' },
+    { id: 'THEME_MASTER',   n: 'Artista',            desc: 'Explore as configurações e aplique um novo tema.', u: false, icon: 'palette' },
+    { id: 'ORGANIZER',      n: 'Organizador',        desc: 'Personalize seu dashboard reorganizando os widgets.', u: false, icon: 'layout-template' },
 ];
 
 function getInitialState() {
@@ -45,10 +32,7 @@ function getInitialState() {
         },
         persistentUserData: {
             achievements: JSON.parse(JSON.stringify(allAchievements)),
-            // NOVAS PROPRIEDADES PARA RASTREAR SEQUÊNCIAS
             consecutiveDays: 0,
-            goalStreak: 0,
-            lastGoalDate: null,
         }
     };
 
@@ -60,17 +44,10 @@ function getInitialState() {
             yesterday.setDate(yesterday.getDate() - 1);
             const lastVisitWasYesterday = savedState.lastVisit === yesterday.toISOString().slice(0, 10);
 
-            // Lógica de sequência de dias de uso
             if (lastVisitWasYesterday) {
                 savedState.persistentUserData.consecutiveDays = (savedState.persistentUserData.consecutiveDays || 0) + 1;
             } else {
-                savedState.persistentUserData.consecutiveDays = 1; // Reset se pulou um dia
-            }
-
-            // Lógica de sequência de metas atingidas
-            const lastGoalDate = savedState.persistentUserData.lastGoalDate ? new Date(savedState.persistentUserData.lastGoalDate) : null;
-            if (!lastGoalDate || lastGoalDate.toISOString().slice(0,10) !== yesterday.toISOString().slice(0,10)) {
-                 savedState.persistentUserData.goalStreak = 0; // Reseta se a última meta não foi ontem
+                savedState.persistentUserData.consecutiveDays = 1;
             }
 
             savedState.dailyUserData = { ...defaultState.dailyUserData };
@@ -86,6 +63,12 @@ function getInitialState() {
         if (savedState.persistentUserData.weeklyProgress) {
             delete savedState.persistentUserData.weeklyProgress;
         }
+        if (savedState.persistentUserData.goalStreak) {
+             delete savedState.persistentUserData.goalStreak;
+        }
+        if (savedState.persistentUserData.lastGoalDate) {
+             delete savedState.persistentUserData.lastGoalDate;
+        }
 
         return {
             ...defaultState,
@@ -95,7 +78,6 @@ function getInitialState() {
         };
     }
     
-    // Se for a primeira vez, a sequência começa em 1
     defaultState.persistentUserData.consecutiveDays = 1;
     return defaultState;
 }
