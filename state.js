@@ -18,7 +18,6 @@ function getInitialState() {
             dailyGoal: 2000,
             reminders: false,
             theme: 'teal',
-            // ORDEM ATUALIZADA
             widgetOrder: ['progress', 'stats', 'activity', 'achievements', 'tip']
         },
         dailyUserData: {
@@ -79,14 +78,29 @@ export function getState() {
     return state;
 }
 
-export function updateState(newState) {
-    state = {
-        ...state,
-        ...newState,
-        settings: { ...state.settings, ...newState.settings },
-        dailyUserData: { ...state.dailyUserData, ...newState.dailyUserData },
-        persistentUserData: { ...state.persistentUserData, ...newState.persistentUserData }
-    };
+/**
+ * Atualiza o estado global da aplicação com base nas novas informações.
+ * Esta versão é mais simples e robusta para evitar a perda de dados em objetos aninhados.
+ * @param {object} updates - Um objeto contendo as chaves do estado a serem atualizadas.
+ */
+export function updateState(updates) {
+    // Começa com uma cópia do estado atual
+    const newState = { ...state };
+
+    // Itera sobre as chaves do objeto de atualização
+    for (const key in updates) {
+        // Se a chave existe e é um objeto (mas não um array), faz um merge profundo.
+        // Isso garante que dados aninhados como em 'persistentUserData' sejam combinados corretamente.
+        if (typeof updates[key] === 'object' && !Array.isArray(updates[key]) && state[key]) {
+            newState[key] = { ...state[key], ...updates[key] };
+        } else {
+            // Para outras chaves (valores primitivos ou arrays), simplesmente substitui.
+            newState[key] = updates[key];
+        }
+    }
+    
+    // Atualiza a variável de estado global e o localStorage
+    state = newState;
     localStorage.setItem('acqua-state', JSON.stringify(state));
 }
 
