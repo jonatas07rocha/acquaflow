@@ -1,5 +1,7 @@
+// jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/main.js
+
 import { getState, updateState, resetState } from './state.js';
-import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, showResetConfirmationModal, enterReorderMode, saveLayout, applyTheme, closeAllModals } from './ui.js';
+import { renderDashboard, showAddWaterModal, showSettingsModal, showCalendarReminderModal, showResetConfirmationModal, showAchievementInfoModal, enterReorderMode, saveLayout, applyTheme, closeAllModals } from './ui.js';
 import { checkAndUnlockAchievements } from './achievements.js';
 import { playAddWaterSound, playButtonClickSound } from './audio.js';
 import { createHourlyReminder } from './calendar.js';
@@ -27,7 +29,6 @@ function addWater(amount) {
     });
     
     renderDashboard();
-    
     checkAndUnlockAchievements();
 }
 
@@ -66,14 +67,17 @@ function setupEventListeners() {
         if (!targetElement) return;
 
         const action = targetElement.dataset.action;
-        const actionsWithSound = ['showSettings', 'saveLayout', 'showAddWater', 'addCustomWater', 'closeModal', 'enterReorderMode', 'saveSettings', 'selectTheme', 'createCalendarReminder', 'showResetConfirmation', 'confirmReset'];
+        const actionsWithSound = ['showSettings', 'saveLayout', 'showAddWater', 'addCustomWater', 'closeModal', 'enterReorderMode', 'saveSettings', 'selectTheme', 'createCalendarReminder', 'showResetConfirmation', 'confirmReset', 'showAchievementInfo'];
         if (actionsWithSound.includes(action)) {
             playButtonClickSound();
         }
 
         switch(action) {
             case 'showSettings': showSettingsModal(); break;
-            case 'saveLayout': saveLayout(); break;
+            case 'saveLayout': 
+                saveLayout(); 
+                checkAndUnlockAchievements('ORGANIZER');
+                break;
             case 'showAddWater': showAddWaterModal(); break;
             case 'addCustomWater': confirmAddWater(); break;
             case 'closeModal': closeAllModals(); break;
@@ -88,6 +92,14 @@ function setupEventListeners() {
                 break;
             case 'confirmReset':
                 resetState();
+                break;
+            // NOVA AÇÃO PARA MOSTRAR DETALHES DA CONQUISTA
+            case 'showAchievementInfo':
+                const achId = targetElement.dataset.id;
+                const achievement = getState().persistentUserData.achievements.find(a => a.id === achId);
+                if (achievement) {
+                    showAchievementInfoModal(achievement);
+                }
                 break;
             case 'saveSettings':
                 const newGoal = parseInt(document.getElementById('goal-input').value, 10);
@@ -111,6 +123,7 @@ function setupEventListeners() {
                 });
                 targetElement.querySelector('.w-10').classList.add('border-white');
                 targetElement.querySelector('.w-10').classList.remove('border-transparent');
+                checkAndUnlockAchievements('THEME_MASTER');
                 break;
         }
     });
