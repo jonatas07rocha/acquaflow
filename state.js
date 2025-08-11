@@ -36,7 +36,6 @@ function getInitialState() {
     if (savedStateJSON) {
         let savedState = JSON.parse(savedStateJSON);
         
-        // **A CORREÇÃO PRINCIPAL ESTÁ AQUI**
         // Verifica se a data da última visita é diferente da data de hoje.
         if (savedState.lastVisit !== today) {
             // É um novo dia! Mantém as configurações e dados persistentes,
@@ -87,4 +86,17 @@ export function updateState(newState) {
     };
     localStorage.setItem('acqua-state', JSON.stringify(state));
     // console.log("Estado atualizado:", state); // Descomente para depurar
+}
+
+/**
+ * Reseta todo o estado da aplicação para o padrão.
+ * Remove os dados do localStorage e recarrega a página.
+ */
+export function resetState() {
+    console.log("Resetando o estado da aplicação...");
+    localStorage.removeItem('acqua-state');
+    // Adiciona um pequeno delay para garantir que a operação de remoção seja concluída antes do reload.
+    setTimeout(() => {
+        location.reload();
+    }, 100);
 }
