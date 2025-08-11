@@ -1,9 +1,39 @@
+// jonatas07rocha/acquaflow/acquaflow-4adf3ba6a047c14f9c16629e39fadb26cd705eb7/ui.js
+
 import { themes } from './themes.js';
 import { getState, updateState } from './state.js';
 import { playAchievementSound } from './audio.js';
 import { tips } from './tips.js';
 
 let sortableInstance = null;
+
+/**
+ * Renderiza o gráfico de progresso semanal de forma independente,
+ * lendo os dados mais recentes diretamente do localStorage.
+ * Isso garante que o gráfico sempre reflita o estado real.
+ */
+function renderWeeklyChart() {
+    const weeklyChartEl = document.getElementById('weekly-chart');
+    if (!weeklyChartEl) return;
+
+    try {
+        const savedState = JSON.parse(localStorage.getItem('acqua-state'));
+        if (savedState && savedState.persistentUserData && savedState.persistentUserData.weeklyProgress) {
+            const weeklyProgress = savedState.persistentUserData.weeklyProgress;
+            weeklyChartEl.innerHTML = weeklyProgress.map(day => `
+                <div class="flex flex-col items-center w-8">
+                    <div class="w-full h-full flex items-end">
+                        <div class="chart-bar-fill w-full rounded-t-sm" style="height: ${day.p}%"></div>
+                    </div>
+                    <span class="text-xs opacity-70 mt-1">${day.day}</span>
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        console.error("Erro ao renderizar o gráfico semanal a partir do localStorage:", e);
+    }
+}
+
 
 function getDailyTip() {
     const now = new Date();
@@ -27,9 +57,8 @@ const widgetTemplates = {
             </div>
             
             <h3 class="text-sm font-semibold opacity-80 mb-2">Progresso Semanal</h3>
-            <div id="weekly-chart" class="flex justify-between items-end h-32 px-2 mb-4">
-                ${state.persistentUserData.weeklyProgress.map(day => `<div class="flex flex-col items-center w-8"><div class="w-full h-full flex items-end"><div class="chart-bar-fill w-full rounded-t-sm" style="height: ${day.p}%"></div></div><span class="text-xs opacity-70 mt-1">${day.day}</span></div>`).join('')}
-            </div>
+            // O gráfico agora é apenas uma moldura vazia, a ser preenchida pela função renderWeeklyChart()
+            <div id="weekly-chart" class="flex justify-between items-end h-32 px-2 mb-4"></div>
 
             <div class="border-t border-white/20 my-4"></div>
 
@@ -56,32 +85,28 @@ const modalTemplates = {
 };
 
 export function renderDashboard() {
-    console.group("🖥️ Renderizando Dashboard");
     const state = getState();
     const container = document.getElementById('widget-container');
     const header = document.getElementById('date-header');
-    if (!container || !header) {
-        console.error("Container de widgets ou cabeçalho não encontrado. Renderização abortada.");
-        console.groupEnd();
-        return;
-    }
+    if (!container || !header) return;
     container.innerHTML = '';
     const today = new Date();
     header.textContent = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
     applyTheme(state.settings.theme);
-    console.log("Ordem dos widgets:", state.settings.widgetOrder);
     state.settings.widgetOrder.forEach(widgetId => {
         if (widgetTemplates[widgetId]) {
             container.innerHTML += widgetTemplates[widgetId](state);
-        } else {
-            console.warn(`Template para o widget "${widgetId}" não encontrado.`);
         }
     });
+    
+    // ATUALIZAÇÃO DO FLUXO
+    // Após renderizar a estrutura principal, chamamos as funções
+    // que preenchem os dados de forma independente.
     updateProgressCircle();
+    renderWeeklyChart(); // <-- A "mini-aplicação" do gráfico é chamada aqui.
+
     lucide.createIcons();
     setupScrollAnimations();
-    console.log("Renderização completa.");
-    console.groupEnd();
 }
 
 function updateProgressCircle() {
